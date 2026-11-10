@@ -17,11 +17,9 @@ export default function StorePage() {
         <h1 className="text-2xl font-semibold tracking-tight">Small Seller Co.</h1>
         <p className="mt-1 text-sm text-muted">Pay with your PayPal sandbox buyer account. Each purchase is recorded by SKU in Recall Desk.</p>
       </header>
-      <PayPalProviders>
-        <Suspense fallback={<Skeleton rows={3} />}>
-          <Products />
-        </Suspense>
-      </PayPalProviders>
+      <Suspense fallback={<Skeleton rows={3} />}>
+        <Products />
+      </Suspense>
     </main>
   );
 }
@@ -30,7 +28,11 @@ async function Products() {
   await connection();
   const products = listProducts();
   if (products.length === 0) return <p className="text-sm text-muted">No products. Run <code className="font-mono">npm run db:seed</code>.</p>;
+  // The provider lives inside the streamed boundary so it hydrates together with the
+  // buttons. In the static shell it hydrated first, loaded the SDK, and the buttons'
+  // first client render then mismatched the server HTML (React #418, prod builds only).
   return (
+    <PayPalProviders>
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {products.map((p) => (
         <article key={p.sku} className="flex flex-col rounded-xl border border-line bg-surface p-5">
@@ -44,5 +46,6 @@ async function Products() {
         </article>
       ))}
     </div>
+    </PayPalProviders>
   );
 }
