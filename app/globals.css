@@ -1,26 +1,72 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --background: #f7f7f8;
+  --surface: #ffffff;
+  --foreground: #18181b;
+  --muted: #6b6b76;
+  --line: #e4e4e9;
+  --accent: #0b5fd6;
+  --accent-soft: #e8f0fd;
+  --danger: #c4231b;
+  --danger-soft: #fdecea;
+  --warn: #9a5b00;
+  --warn-soft: #fff4e0;
+  --ok: #157a3d;
+  --ok-soft: #e6f6ec;
+  /* Case-status fills (validated: dataviz validate_palette, light surface) */
+  --st-resolved: #1f9d55;
+  --st-flight: #0b5fd6;
+  --st-ship: #c27c00;
+  --st-failed: #c4231b;
+  --st-notified: #8a94a6;
+  --st-identified: #d4d4dc;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #0d0d10;
+    --surface: #17171b;
+    --foreground: #ececf1;
+    --muted: #9a9aa6;
+    --line: #2a2a31;
+    --accent: #5b9dff;
+    --accent-soft: #15233a;
+    --danger: #ff6b61;
+    --danger-soft: #3a1714;
+    --warn: #f0b04f;
+    --warn-soft: #33260f;
+    --ok: #4cd483;
+    --ok-soft: #10301d;
+    /* validated against the dark surface */
+    --st-resolved: #24924f;
+    --st-flight: #3576d6;
+    --st-ship: #c0881d;
+    --st-failed: #c9372f;
+    --st-notified: #6b7280;
+    --st-identified: #3a3a42;
   }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }

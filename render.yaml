@@ -1,0 +1,22 @@
+# Render Blueprint: https://render.com/docs/blueprint-spec
+# Free web service running `next start`. SQLite lives on the instance's disk, which is
+# ephemeral on the free plan, so a fresh instance seeds real PayPal sandbox sales on boot.
+services:
+  - type: web
+    name: recall-desk
+    runtime: node
+    plan: free
+    region: oregon
+    branch: main
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm run start:render
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NEXT_PUBLIC_PAYPAL_ENVIRONMENT
+        value: sandbox
+      - key: NEXT_PUBLIC_PAYPAL_CLIENT_ID
+        sync: false # set in the Render dashboard / CLI, never committed
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      # Optional: SMTP_URL, EMAIL_FROM, EMAIL_REDIRECT_TO, APP_URL, ANTHROPIC_API_KEY, PAYPAL_WEBHOOK_ID
