@@ -1,5 +1,7 @@
 # Recall Desk
 
+**Live demo:** https://recall-desk-zi89.onrender.com (PayPal sandbox; the free instance sleeps when idle, so the first load can take about a minute)
+
 **When a product is recalled, small sellers rarely know who bought it. PayPal does.**
 
 Every PayPal payment carries SKU-level line items, the buyer's contact details and a shipping address.
@@ -79,6 +81,22 @@ app/
   recall-actions.ts    Server Actions for the console + buyer page
   actions.ts           storefront checkout (create / capture → ledger)
 ```
+
+## Deploy (Render, free)
+
+`render.yaml` defines a free Node web service. SQLite lives on the instance disk, which is ephemeral on the free
+plan, so `npm run start:render` seeds fresh sandbox sales on boot when the database is empty. Pushes to `main` auto-deploy.
+
+```bash
+render login && render workspace set <workspace-id>
+render services create --name recall-desk --type web_service --runtime node --plan free \
+  --repo https://github.com/shiwani42/recall-desk --branch main \
+  --build-command "npm ci --include=dev && npm run build" --start-command "npm run start:render" \
+  --health-check-path /api/health \
+  --env-var NEXT_PUBLIC_PAYPAL_ENVIRONMENT=sandbox --env-var NEXT_PUBLIC_PAYPAL_CLIENT_ID=… --env-var PAYPAL_CLIENT_SECRET=…
+```
+
+Not Vercel: its serverless functions can't keep a SQLite file. Use it only after moving to a hosted database.
 
 ## Scripts
 
