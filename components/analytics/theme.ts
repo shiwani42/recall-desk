@@ -18,7 +18,7 @@ export const recallStudioTheme = studioTheme.withParams({
   borderColor: token("line"),
   accentColor: token("accent"),
   iconColor: token("muted"),
-  rowHoverColor: token("accent-soft"),
+  rowHoverColor: token("surface-2"),
 
   // The canvas is the page background; widgets are the app's cards.
   studioWrapperBorder: false,
@@ -34,12 +34,12 @@ export const recallStudioTheme = studioTheme.withParams({
   studioCanvasFontFamily: FONT,
 
   studioWidgetBackgroundColor: token("surface"),
-  studioWidgetBorder: line("line"),
-  studioWidgetBorderRadius: 8,
-  studioWidgetPadding: 12,
+  studioWidgetBorder: false,
+  studioWidgetBorderRadius: 20,
+  studioWidgetPadding: 16,
   studioWidgetTitleFontFamily: FONT,
   studioWidgetTitleFontSize: 14,
-  studioWidgetTitleFontWeight: 600,
+  studioWidgetTitleFontWeight: 500,
   studioWidgetTitleTextColor: token("foreground"),
   studioWidgetSubtitleFontFamily: FONT,
   studioWidgetSubtitleFontSize: 12,
@@ -75,7 +75,7 @@ export const recallStudioTheme = studioTheme.withParams({
   gridRowBorder: line("line"),
   gridHeaderRowBorder: line("line"),
   gridPinnedRowBorder: line("line"),
-  gridRowHoverColor: token("accent-soft"),
+  gridRowHoverColor: token("surface-2"),
   gridWrapperBorder: false,
 
   chartFontFamily: FONT,

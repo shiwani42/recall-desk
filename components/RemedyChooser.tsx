@@ -32,7 +32,7 @@ export default function RemedyChooser({ token, options, recommended }: { token: 
       {options.map((o) => (
         <label
           key={o.remedy}
-          className={`flex gap-3 rounded-xl border p-4 transition-[scale,background-color,border-color,box-shadow] duration-200 ease-snappy ${o.disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:border-muted/50 hover:bg-background motion-safe:active:scale-[0.99]"} border-line has-[:checked]:border-accent has-[:checked]:bg-accent-soft has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent/40`}
+          className={`flex gap-3 rounded-2xl border p-5 transition-[scale,background-color,border-color,box-shadow] duration-200 ease-snappy ${o.disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:border-muted/50 hover:bg-background motion-safe:active:scale-[0.99]"} border-line has-[:checked]:border-accent has-[:checked]:bg-accent-soft has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent/40`}
         >
           <input
             type="radio"

@@ -31,9 +31,9 @@ export default function NewRecallWorkspace({
             <h2 className="font-semibold">Start from an official notice</h2>
             <p className="text-sm text-muted">Pre-fill the recall and find affected SKUs automatically.</p>
           </div>
-          <div className="flex rounded-lg border border-line p-0.5 text-sm">
+          <div className="flex rounded-full bg-surface-2 p-1 text-sm">
             {([["watch", `Recall watch${watch.length ? ` (${watch.length})` : ""}`], ["search", "Search CPSC"], ["paste", "Paste a notice"]] as const).map(([k, label]) => (
-              <button key={k} type="button" aria-pressed={tab === k} onClick={() => setTab(k)} className={`rounded-md px-3 py-1.5 transition-colors duration-150 ${tab === k ? "bg-accent text-on-accent" : "text-muted hover:text-foreground"}`}>
+              <button key={k} type="button" aria-pressed={tab === k} onClick={() => setTab(k)} className={`rounded-full px-4 py-1.5 transition-colors duration-150 ${tab === k ? "bg-accent text-on-accent" : "text-muted hover:text-foreground"}`}>
                 {label}
               </button>
             ))}
@@ -69,7 +69,7 @@ export default function NewRecallWorkspace({
 
 function NoticeRow({ hit: { notice, matches }, onUse }: { hit: Hit; onUse: () => void }) {
   return (
-    <div className="flex flex-wrap items-start gap-3 rounded-lg border border-line p-3">
+    <div className="flex flex-wrap items-start gap-3 rounded-2xl border border-line p-3">
       {notice.imageUrl && (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={notice.imageUrl} alt="" className="h-14 w-14 rounded object-cover" onError={(e) => e.currentTarget.remove()} />

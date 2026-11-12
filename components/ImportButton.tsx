@@ -26,7 +26,7 @@ export default function ImportButton() {
       </div>
       {res && !res.ok && <p role="alert" data-testid="import-result" className="text-sm text-danger">{res.error}</p>}
       {res?.ok && (
-        <div role="status" data-testid="import-result" className="rounded-lg border border-line bg-surface p-3 text-sm">
+        <div role="status" data-testid="import-result" className="rounded-2xl bg-surface p-4 text-sm">
           <p>
             <strong>{res.imported}</strong> new sale{res.imported === 1 ? "" : "s"} imported
             {res.newCases > 0 && <> · <strong className="text-danger">{res.newCases}</strong> newly affected by open recalls</>}

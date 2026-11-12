@@ -7,7 +7,7 @@ import CaseActions from "@/components/CaseActions";
 import MarketCheck from "@/components/MarketCheck";
 import RecallToolbar from "@/components/RecallToolbar";
 import StatusBar, { type StatusCounts } from "@/components/StatusBar";
-import { Badge, Card, REMEDY_LABEL, SEVERITY, STATUS, Skeleton, Stat, fmtDate } from "@/components/ui";
+import { Badge, Card, Hero, REMEDY_LABEL, SEVERITY, STATUS, Skeleton, fmtDate } from "@/components/ui";
 import { getDb } from "@/lib/db";
 import { formatMoney } from "@/lib/money";
 import { buyerLink } from "@/lib/recalls/notify";
@@ -41,44 +41,49 @@ async function RecallContent({ params }: { params: PageProps<"/recalls/[id]">["p
     : "all sales";
 
   return (
-    <div className="space-y-6">
-      <div>
-        <Link href="/" className="text-sm text-muted transition-colors duration-150 hover:text-foreground">← Recalls</Link>
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <span className="font-mono text-xs text-muted">{recall.id}</span>
+    <div className="space-y-4">
+      <Link href="/" className="inline-block pt-2 text-sm text-muted transition-colors duration-150 hover:text-foreground">← Recalls</Link>
+      <Hero className="p-7">
+        <div className="flex flex-wrap items-center gap-2">
           <Badge tone={SEVERITY[recall.severity].tone}>{SEVERITY[recall.severity].label}</Badge>
-          {skus.map((s) => <Badge key={s}>{s}</Badge>)}
+          {skus.map((s) => (
+            <span key={s} className="rounded-full border border-hero-line px-2.5 py-0.5 text-xs font-medium">{s}</span>
+          ))}
+          <span className="font-mono text-xs text-hero-muted">{recall.id}</span>
         </div>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight">{recall.title}</h1>
-        <p className="mt-1 max-w-3xl text-sm text-muted">
+        <h1 className="mt-4 max-w-3xl text-[32px] font-medium leading-tight tracking-tight">{recall.title}</h1>
+        <p className="mt-2 max-w-3xl text-sm text-hero-muted">
           {recall.hazard}
-          {recall.instructions && <> · <span className="text-foreground">{recall.instructions}</span></>}
+          {recall.instructions && <> <span className="text-hero-fg">{recall.instructions}</span></>}
         </p>
-        <p className="mt-1 text-xs text-muted">
+        <p className="mt-1 text-xs text-hero-muted">
           Offers {recall.remedies.map((r) => REMEDY_LABEL[r]).join(" / ")}
           {recall.replacementStock !== null && ` · ${recall.replacementStock} replacement units`} · {window}
-          {recall.sourceUrl && <> · <a href={recall.sourceUrl} className="underline" target="_blank" rel="noreferrer">official notice</a></>}
+          {recall.sourceUrl && <> · <a href={recall.sourceUrl} className="underline" target="_blank" rel="noreferrer">official notice<span className="sr-only"> (opens in a new tab)</span></a></>}
         </p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Stat label="Affected buyers" value={cases.length} hint={`${units} units`} />
-        <Stat label="Notified" value={cases.filter((r) => r.c.notifiedAt).length} />
-        <Stat label="Resolved" value={`${resolved}/${cases.length}`} hint={`${cases.length ? Math.round((resolved / cases.length) * 100) : 0}% of affected buyers`} />
-        {recall.remedies.includes("refund") ? (
-          <Stat label="Refunded" value={refunded ? formatMoney(refunded) : "—"} hint="sent via PayPal (incl. in flight)" />
-        ) : (
-          <Stat
-            label="Shipped"
-            value={`${cases.filter((r) => r.c.status === "resolved").length}/${cases.length}`}
-            hint={`${cases.filter((r) => r.c.status === "remedy_selected").length} awaiting shipment`}
+        <dl className="mt-8 grid grid-cols-2 gap-6 border-t border-hero-line pt-6 md:grid-cols-4">
+          <HeroStat label="Affected buyers" value={cases.length} hint={`${units} units`} />
+          <HeroStat label="Notified" value={cases.filter((r) => r.c.notifiedAt).length} />
+          <HeroStat
+            label="Resolved"
+            value={`${cases.length ? Math.round((resolved / cases.length) * 100) : 0}%`}
+            hint={`${resolved} of ${cases.length} buyers`}
           />
-        )}
-      </div>
+          {recall.remedies.includes("refund") ? (
+            <HeroStat label="Refunded" value={refunded ? formatMoney(refunded) : "—"} hint="via PayPal, incl. in flight" />
+          ) : (
+            <HeroStat
+              label="Shipped"
+              value={`${resolved}/${cases.length}`}
+              hint={`${cases.filter((r) => r.c.status === "remedy_selected").length} awaiting shipment`}
+            />
+          )}
+        </dl>
+      </Hero>
 
       {cases.length > 0 && (
-        <Card className="p-4">
-          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">Where every affected unit stands</p>
+        <Card className="p-6">
+          <p className="mb-3 text-sm font-medium">Where every affected buyer stands</p>
           <StatusBar
             variant="tall"
             counts={cases.reduce<StatusCounts>((acc, r) => ({ ...acc, [r.c.status]: (acc[r.c.status] ?? 0) + 1 }), {})}
@@ -192,6 +197,16 @@ async function RecallContent({ params }: { params: PageProps<"/recalls/[id]">["p
         </Card>
         </>
       )}
+    </div>
+  );
+}
+
+function HeroStat({ label, value, hint }: { label: string; value: React.ReactNode; hint?: string }) {
+  return (
+    <div>
+      <dt className="text-xs text-hero-muted">{label}</dt>
+      <dd className="mt-2 text-[36px] font-light leading-none tracking-tight tabular-nums">{value}</dd>
+      {hint && <dd className="mt-1.5 text-xs text-hero-muted">{hint}</dd>}
     </div>
   );
 }

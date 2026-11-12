@@ -10,7 +10,7 @@ export default function OutboxPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Outbox</h1>
+        <h1 className="text-4xl font-medium tracking-tight">Outbox</h1>
         <p className="mt-1 text-sm text-muted">Every email sent to buyers: recall notices and status updates.</p>
       </div>
       <Suspense fallback={<Skeleton rows={5} />}>
@@ -54,7 +54,7 @@ async function Messages() {
       ) : (
         <div className="space-y-3">
           {msgs.map((m) => (
-            <details key={m.id} className="rounded-xl border border-line bg-surface">
+            <details key={m.id} className="rounded-[20px] bg-surface dark:border dark:border-line">
               <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-3 gap-y-1 p-4">
                 <Badge tone={STATUS[m.status].tone}>{STATUS[m.status].label}</Badge>
                 <Badge tone={m.kind === "notice" ? "danger" : "accent"}>{m.kind === "notice" ? "Recall notice" : "Update"}</Badge>

@@ -87,7 +87,7 @@ export function Alternatives({ items }: { items: Listing[] }) {
             href={l.retailers[0].url}
             target="_blank"
             rel="noreferrer"
-            className="group flex h-full flex-col rounded-lg border border-line p-3 transition-colors duration-150 hover:border-accent"
+            className="group flex h-full flex-col rounded-2xl border border-line p-3 transition-colors duration-150 hover:border-accent"
           >
             {/* eslint-disable-next-line @next/next/no-img-element -- retailer images from many hosts */}
             <img src={l.image!} alt="" className="mb-2 h-28 w-full rounded-md bg-white object-contain" loading="lazy" />

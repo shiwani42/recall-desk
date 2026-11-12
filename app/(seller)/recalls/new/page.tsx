@@ -14,7 +14,7 @@ export default function NewRecallPage() {
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
         <Link href="/" className="text-sm text-muted hover:text-foreground">← Recalls</Link>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight">New recall</h1>
+        <h1 className="mt-2 text-4xl font-medium tracking-tight">New recall</h1>
         <p className="mt-1 text-sm text-muted">Choose the recalled SKUs. Every matching PayPal sale becomes a case to resolve.</p>
       </div>
       <Suspense fallback={<Skeleton rows={6} />}>

@@ -57,14 +57,17 @@ async function BuyerContent({ params }: { params: PageProps<"/r/[token]">["param
 
   return (
     <div className="space-y-6">
-      <div className="rounded-xl border border-danger/30 bg-danger-soft p-5">
-        <p className="text-xs font-semibold uppercase tracking-wide text-danger">Safety recall · {recall.id}</p>
-        <h1 className="mt-1 text-xl font-semibold">{recall.title}</h1>
-        <p className="mt-2 text-sm">{recall.hazard}</p>
-        {recall.instructions && <p className="mt-3 text-sm font-semibold">{recall.instructions}</p>}
+      <div className="rounded-panel bg-hero p-7 text-hero-fg">
+        <p className="flex flex-wrap items-center gap-2 text-xs">
+          <span className="rounded-full bg-danger px-2.5 py-1 font-semibold uppercase tracking-wide text-on-danger">Safety recall</span>
+          <span className="font-mono text-hero-muted">{recall.id}</span>
+        </p>
+        <h1 className="mt-4 text-[28px] font-medium leading-tight tracking-tight">{recall.title}</h1>
+        <p className="mt-3 text-sm text-hero-muted">{recall.hazard}</p>
+        {recall.instructions && <p className="mt-4 rounded-2xl border border-hero-line px-4 py-3 text-sm font-medium">{recall.instructions}</p>}
       </div>
 
-      <div className="rounded-xl border border-line bg-surface p-5 text-sm">
+      <div className="rounded-panel bg-surface p-6 text-sm dark:border dark:border-line">
         <p className="text-xs font-medium uppercase tracking-wide text-muted">Your purchase</p>
         <p className="mt-1 font-medium">{c.quantity}× {item.name}</p>
         <p className="text-muted">
@@ -73,7 +76,7 @@ async function BuyerContent({ params }: { params: PageProps<"/r/[token]">["param
         </p>
       </div>
 
-      <div className="rounded-xl border border-line bg-surface p-5">
+      <div className="rounded-panel bg-surface p-6 dark:border dark:border-line">
         {done ? (
           <Resolved remedy={c.chosenRemedy!} status={c.status} amount={amount} rail={c.resolution?.rail} shipTo={addr(sale.shipAddress)} note={c.resolution?.note} />
         ) : (
@@ -127,7 +130,7 @@ async function BuyerAlternatives({ sku }: { sku: string }) {
   const items = await safeAlternatives(product).catch(() => []);
   if (items.length === 0) return null;
   return (
-    <div className="rounded-xl border border-line bg-surface p-5">
+    <div className="rounded-panel bg-surface p-6 dark:border dark:border-line">
       <h2 className="font-semibold">Need a replacement now?</h2>
       <p className="text-sm text-muted">Similar products from other brands, in stock at these stores today.</p>
       <Alternatives items={items} />

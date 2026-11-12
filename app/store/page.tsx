@@ -14,7 +14,7 @@ export default function StorePage() {
     <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10">
       <header className="mb-8">
         <p className="text-xs font-medium uppercase tracking-wide text-muted">Demo storefront</p>
-        <h1 className="text-2xl font-semibold tracking-tight">Small Seller Co.</h1>
+        <h1 className="text-4xl font-medium tracking-tight">Small Seller Co.</h1>
         <p className="mt-1 text-sm text-muted">Pay with your PayPal sandbox buyer account. Each purchase is recorded by SKU in Recall Desk.</p>
       </header>
       <Suspense fallback={<Skeleton rows={3} />}>
@@ -35,7 +35,7 @@ async function Products() {
     <PayPalProviders>
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {products.map((p) => (
-        <article key={p.sku} className="flex flex-col rounded-xl border border-line bg-surface p-5">
+        <article key={p.sku} className="flex flex-col rounded-panel bg-surface p-6 dark:border dark:border-line">
           <p className="font-mono text-xs text-muted">{p.sku}</p>
           <h2 className="mt-1 font-semibold">{p.name}</h2>
           <p className="mb-3 text-sm text-muted">{p.description}</p>

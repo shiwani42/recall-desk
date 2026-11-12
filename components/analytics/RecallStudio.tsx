@@ -170,15 +170,15 @@ function Workspace({ data, licenseKey, aiEnabled }: Props) {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex flex-wrap items-center gap-2 border-b border-line bg-surface px-4 py-2">
-        <nav className="flex gap-1 text-sm" aria-label="Report pages">
+      <div className="flex flex-wrap items-center gap-2 px-4 py-3">
+        <nav className="flex gap-1 rounded-full bg-surface p-1 text-sm dark:border dark:border-line" aria-label="Report pages">
           {pages.map((p) => (
             <button
               key={p.id}
               type="button"
               onClick={() => showPage(p.id)}
               aria-current={p.id === pageId ? "page" : undefined}
-              className={`rounded-md px-2.5 py-1.5 transition-colors duration-150 ${p.id === pageId ? "bg-accent-soft font-medium text-accent" : "text-muted hover:bg-background hover:text-foreground"}`}
+              className={`rounded-full px-4 py-2 transition-colors duration-150 ${p.id === pageId ? "bg-accent font-medium text-on-accent" : "text-muted hover:bg-surface-2 hover:text-foreground"}`}
             >
               {p.label}
             </button>
@@ -189,7 +189,7 @@ function Workspace({ data, licenseKey, aiEnabled }: Props) {
             <button
               type="button"
               onClick={askAnalyst}
-              className={`flex items-center gap-1.5 rounded-md border border-line px-2.5 py-1.5 hover:bg-background ${press}`}
+              className={`flex items-center gap-1.5 rounded-full bg-surface px-4 py-2 hover:bg-surface-2 dark:border dark:border-line ${press}`}
             >
               <Sparkles size={14} aria-hidden className="text-accent" /> Ask the analyst
             </button>
@@ -200,7 +200,7 @@ function Workspace({ data, licenseKey, aiEnabled }: Props) {
           <button
             type="button"
             onClick={() => setMode(mode === "edit" ? "view" : "edit")}
-            className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 ${press} ${mode === "edit" ? "border-accent bg-accent-soft text-accent" : "border-line hover:bg-background"}`}
+            className={`flex items-center gap-1.5 rounded-full px-4 py-2 ${press} ${mode === "edit" ? "bg-accent-soft font-medium" : "bg-surface hover:bg-surface-2 dark:border dark:border-line"}`}
             aria-pressed={mode === "edit"}
           >
             <Pencil size={14} aria-hidden /> {mode === "edit" ? "Done editing" : "Edit"}
@@ -208,7 +208,7 @@ function Workspace({ data, licenseKey, aiEnabled }: Props) {
           <button
             type="button"
             onClick={save}
-            className={`flex items-center gap-1.5 rounded-md bg-accent px-2.5 py-1.5 font-medium text-on-accent hover:opacity-90 ${press}`}
+            className={`flex items-center gap-1.5 rounded-full bg-accent px-4 py-2 font-medium text-on-accent hover:opacity-90 ${press}`}
           >
             <Save size={14} aria-hidden /> Save
           </button>
@@ -217,7 +217,7 @@ function Workspace({ data, licenseKey, aiEnabled }: Props) {
             onClick={reset}
             title="Back to the default report"
             aria-label="Reset to the default report"
-            className={`grid h-8 w-8 place-items-center rounded-md text-muted hover:bg-background hover:text-foreground ${press}`}
+            className={`grid h-9 w-9 place-items-center rounded-full bg-surface text-muted hover:bg-surface-2 hover:text-foreground dark:border dark:border-line ${press}`}
           >
             <RotateCcw size={15} aria-hidden />
           </button>

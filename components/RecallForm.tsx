@@ -28,7 +28,7 @@ export default function RecallForm({ skus, initial, suggestions = {} }: { skus: 
         <p className="text-xs text-muted">Units sold and buyers come from your PayPal sales ledger.</p>
         <div className="grid gap-2 sm:grid-cols-2">
           {skus.map((s) => (
-            <label key={s.sku} className="flex cursor-pointer items-start gap-3 rounded-lg border border-line p-3 has-[:checked]:border-accent has-[:checked]:bg-accent-soft">
+            <label key={s.sku} className="flex cursor-pointer items-start gap-3 rounded-2xl border border-line p-3 has-[:checked]:border-accent has-[:checked]:bg-accent-soft">
               <input type="checkbox" name="skus" value={s.sku} defaultChecked={has("skus", s.sku)} className="mt-1 accent-[var(--accent)]" />
               <span className="min-w-0">
                 <span className="block font-mono text-xs text-muted">{s.sku}</span>
@@ -72,7 +72,7 @@ export default function RecallForm({ skus, initial, suggestions = {} }: { skus: 
         <legend className="text-sm font-medium">Remedies offered</legend>
         <div className="flex flex-wrap gap-2">
           {(["refund", "replace", "repair"] as const).map((r) => (
-            <label key={r} className="flex cursor-pointer items-center gap-2 rounded-lg border border-line px-3 py-2 text-sm has-[:checked]:border-accent has-[:checked]:bg-accent-soft">
+            <label key={r} className="flex cursor-pointer items-center gap-2 rounded-full border border-line px-4 py-2 text-sm has-[:checked]:border-accent has-[:checked]:bg-accent-soft">
               <input type="checkbox" name="remedies" value={r} defaultChecked={fresh ? r !== "repair" : has("remedies", r)} className="accent-[var(--accent)]" />
               {r === "refund" ? "Refund" : r === "replace" ? "Replacement" : "Repair kit"}
             </label>

@@ -100,7 +100,7 @@ export default function CaseActions({
                 const i = items.indexOf(document.activeElement as HTMLElement);
                 items[(i + (e.key === "ArrowDown" ? 1 : -1) + items.length) % items.length]?.focus();
               }}
-              className="absolute right-0 top-full z-20 mt-1 w-52 origin-top-right rounded-lg border border-line bg-surface p-1 text-sm shadow-lg motion-safe:animate-pop-in">
+              className="absolute right-0 top-full z-20 mt-1 w-52 origin-top-right rounded-2xl border border-line bg-surface p-1.5 text-sm shadow-lg motion-safe:animate-pop-in">
               {!done && !awaitingShipment &&
                 others.map((r) => {
                   const Icon = ICON[r];

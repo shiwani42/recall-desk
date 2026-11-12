@@ -114,7 +114,7 @@ async function DashboardContent() {
                   </div>
                   <p className="text-[32px] font-light leading-none tracking-tight tabular-nums">
                     {cases ? Math.round((resolved / cases) * 100) : 0}
-                    <span className="text-base text-muted">% resolved</span>
+                    <span className="ml-1 text-base text-muted">% resolved</span>
                   </p>
                   <div>
                     <p className="mb-2 flex items-center justify-between text-xs text-muted">

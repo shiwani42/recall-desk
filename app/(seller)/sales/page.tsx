@@ -10,7 +10,7 @@ export default function SalesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Sales ledger</h1>
+        <h1 className="text-4xl font-medium tracking-tight">Sales ledger</h1>
         <p className="mt-1 text-sm text-muted">Every PayPal capture, itemized by SKU, with who bought it and where it shipped.</p>
       </div>
       <ImportButton />
