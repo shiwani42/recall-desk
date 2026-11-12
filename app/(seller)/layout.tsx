@@ -12,16 +12,16 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
       >
         Skip to content
       </a>
-      <header className="border-b border-line bg-surface">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 sm:flex-nowrap">
-          <Link href="/" className="flex items-center gap-2 font-semibold">
-            <span className="grid h-7 w-7 place-items-center rounded-md bg-accent text-sm text-on-accent" aria-hidden>R</span>
+      <header className="mx-auto w-full max-w-6xl px-4 pt-4">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-panel bg-surface p-2 sm:flex-nowrap sm:rounded-full dark:border dark:border-line">
+          <Link href="/" className="flex items-center gap-2.5 rounded-full py-1 pl-1 pr-3 font-semibold tracking-tight">
+            <span className="grid h-9 w-9 place-items-center rounded-full bg-hero text-sm font-bold text-lime dark:text-hero-fg" aria-hidden>R</span>
             Recall Desk
           </Link>
           {sandbox && (
-            <span className="ml-auto rounded bg-warn-soft px-2 py-0.5 text-xs font-medium text-warn sm:order-last">PayPal sandbox</span>
+            <span className="ml-auto rounded-full bg-warn-soft px-3 py-1 text-xs font-medium text-warn sm:order-last">PayPal sandbox</span>
           )}
-          <div className="-mx-4 w-[calc(100%+2rem)] overflow-x-auto px-4 sm:mx-0 sm:w-auto sm:overflow-visible sm:px-0">
+          <div className="-mx-2 w-[calc(100%+1rem)] overflow-x-auto px-2 sm:mx-auto sm:w-auto sm:overflow-visible sm:px-0">
             <Suspense fallback={<NavList />}>
               <NavLinks />
             </Suspense>

@@ -3,22 +3,32 @@
 :root {
   /* Native controls, scrollbars and date pickers follow the OS theme like the tokens do. */
   color-scheme: light dark;
-  --background: #f7f7f8;
+  /* Soft bento: warm grey canvas, white panels, ink + lime. */
+  --background: #ecebe6;
   --surface: #ffffff;
-  --foreground: #18181b;
-  --muted: #6b6b76;
-  --line: #e4e4e9;
-  --accent: #0b5fd6;
-  --accent-soft: #e8f0fd;
-  --danger: #c4231b;
-  --danger-soft: #fdecea;
-  --warn: #9a5b00;
-  --warn-soft: #fff4e0;
-  --ok: #157a3d;
-  --ok-soft: #e6f6ec;
-  /* Text on solid accent / danger fills (buttons, badges). White in light mode;
-     dark ink in dark mode, where the lighter accent fails AA with white (2.7:1). */
+  --surface-2: #f5f4f0;
+  --foreground: #141413;
+  --muted: #66635d;
+  --line: #e2e0d9;
+  /* Accent = ink in light mode (primary pills, active nav, focus); lime carries the highlight. */
+  --accent: #141413;
+  --accent-soft: #e6e4de;
   --on-accent: #ffffff;
+  --lime: #c8f26a;
+  --on-lime: #141413;
+  /* The one dark "this needs you" card per screen. */
+  --hero: #161615;
+  --hero-fg: #f5f4ef;
+  --hero-muted: #a8a59e;
+  --hero-line: #2e2d2b;
+  --hero-btn: #c8f26a;
+  --hero-btn-fg: #141413;
+  --danger: #c4231b;
+  --danger-soft: #fbe9e6;
+  --warn: #8f5400;
+  --warn-soft: #fbf0dc;
+  --ok: #157a3d;
+  --ok-soft: #e4f3e8;
   --on-danger: #ffffff;
   /* Case-status fills (validated: dataviz validate_palette, light surface) */
   --st-resolved: #1f9d55;
@@ -31,20 +41,30 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0d0d10;
-    --surface: #17171b;
-    --foreground: #ececf1;
-    --muted: #9a9aa6;
-    --line: #2a2a31;
-    --accent: #5b9dff;
-    --accent-soft: #15233a;
+    --background: #0e0e0f;
+    --surface: #19191b;
+    --surface-2: #212124;
+    --foreground: #f2f1ec;
+    --muted: #a19f99;
+    --line: #2b2b2e;
+    --accent: #c8f26a;
+    --accent-soft: #273015;
+    --on-accent: #141413;
+    --lime: #c8f26a;
+    --on-lime: #141413;
+    /* In dark mode the hero card turns lime, so it still stands out. */
+    --hero: #c8f26a;
+    --hero-fg: #141413;
+    --hero-muted: #46511f;
+    --hero-line: #a9d14f;
+    --hero-btn: #141413;
+    --hero-btn-fg: #c8f26a;
     --danger: #ff6b61;
     --danger-soft: #3a1714;
     --warn: #f0b04f;
     --warn-soft: #33260f;
     --ok: #4cd483;
     --ok-soft: #10301d;
-    --on-accent: #0d0d10;
     --on-danger: #0d0d10;
     /* validated against the dark surface */
     --st-resolved: #24924f;
@@ -72,6 +92,16 @@
   --color-ok-soft: var(--ok-soft);
   --color-on-accent: var(--on-accent);
   --color-on-danger: var(--on-danger);
+  --color-surface-2: var(--surface-2);
+  --color-lime: var(--lime);
+  --color-on-lime: var(--on-lime);
+  --color-hero: var(--hero);
+  --color-hero-fg: var(--hero-fg);
+  --color-hero-muted: var(--hero-muted);
+  --color-hero-line: var(--hero-line);
+  --color-hero-btn: var(--hero-btn);
+  --color-hero-btn-fg: var(--hero-btn-fg);
+  --radius-panel: 24px;
   /* Motion: a strong ease-out for UI responses (fast start, soft landing). */
   --ease-snappy: cubic-bezier(0.23, 1, 0.32, 1);
   --animate-pop-in: pop-in 140ms cubic-bezier(0.23, 1, 0.32, 1);
