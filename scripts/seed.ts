@@ -14,6 +14,7 @@ import { markShipped, resolveCase } from "@/lib/recalls/execute";
 import { createRecall, matchRecall } from "@/lib/recalls/service";
 import { syncRecall } from "@/lib/recalls/sync";
 import { recordSale, saleFromPayPalOrder, type SaleInput } from "@/lib/sales";
+import { addError, isCardDecline, shouldStopCapturing, writeSeedReport, type SeedReport } from "@/lib/seed-report";
 
 const DAY = 864e5;
 const dbFile = process.env.DATABASE_PATH ?? path.join(process.cwd(), "data", "recall.db");
@@ -82,7 +83,7 @@ async function captureWithAnyCard(body: ReturnType<typeof buildOrderRequest>, na
       return result;
     } catch (err) {
       lastErr = err;
-      if (!describePayPalError(err).includes("PAYER_CANNOT_PAY")) throw err;
+      if (!isCardDecline(describePayPalError(err))) throw err;
     }
   }
   throw lastErr;
@@ -92,8 +93,21 @@ const lineItems = (items: [string, number][]) =>
   items.map(([sku, quantity]) => ({ sku, name: bySku[sku].name, description: bySku[sku].description, unitPriceCents: bySku[sku].unitPriceCents, quantity }));
 
 async function main() {
+const report: SeedReport = {
+  at: "",
+  sandboxSales: { captured: 0, attempted: 0, skipped: 0, errors: [] },
+  payouts: { sent: 0, failed: 0, outOfFunds: false },
+};
 let ok = 0;
-for (const { buyer, items } of ORDERS) {
+let failedInARow = 0;
+for (const [index, { buyer, items }] of ORDERS.entries()) {
+  // The sandbox declines test cards after heavy use; once it clearly is, stop rather than add load.
+  if (shouldStopCapturing(failedInARow)) {
+    report.sandboxSales.skipped = ORDERS.length - index;
+    console.error(`  ✗ ${failedInARow} orders in a row failed on every card; skipping the remaining ${report.sandboxSales.skipped} sandbox captures`);
+    break;
+  }
+  report.sandboxSales.attempted++;
   const body = buildOrderRequest(lineItems(items));
   body.payer = { emailAddress: buyer.email, name: { givenName: buyer.given, surname: buyer.surname } };
   body.purchaseUnits[0].shipping = {
@@ -110,11 +124,15 @@ for (const { buyer, items } of ORDERS) {
     sale.buyerName ??= `${buyer.given} ${buyer.surname}`;
     recordSale(db, sale);
     ok++;
+    failedInARow = 0;
     console.log(`  ✓ ${sale.buyerName?.padEnd(14)} ${items.map(([s, q]) => `${q}×${s}`).join(", ").padEnd(24)} capture ${sale.captureId}`);
   } catch (err) {
+    failedInARow++;
+    addError(report.sandboxSales.errors, describePayPalError(err));
     console.error(`  ✗ ${buyer.given} ${buyer.surname}: ${describePayPalError(err)}`);
   }
 }
+report.sandboxSales.captured = ok;
 console.log(`✓ sandbox sales captured: ${ok}/${ORDERS.length}`);
 
 for (const { buyer, items, daysAgo } of LEGACY) {
@@ -158,7 +176,7 @@ if (!process.argv.includes("--no-history")) {
   // Of every 6 buyers: 1 took a refund, 2 asked for a replacement (half already shipped), 3 haven't
   // replied. Few payouts on purpose: every Render boot reseeds, and payouts draw down the sandbox
   // business balance faster than the 10 seeded sales refill it (PayPal then answers INSUFFICIENT_FUNDS).
-  let paid = 0, replaced = 0, outOfFunds = false;
+  let paid = 0, replaced = 0, outOfFunds = false, payoutFailures = 0;
   for (const [i, c] of cases.entries()) {
     const slot = i % 6;
     if (slot >= 3) continue;
@@ -168,6 +186,7 @@ if (!process.argv.includes("--no-history")) {
     // Replacement stock ran out: the buyer takes a refund instead, as the buyer page would offer.
     if (!r.ok && remedy === "replace" && !outOfFunds) r = await resolveCase(db, c.id, (remedy = "refund"), "buyer");
     if (!r.ok) {
+      payoutFailures++;
       console.error(`  ✗ case ${c.id}: ${r.error}`);
       if (r.error.includes("INSUFFICIENT_FUNDS")) {
         outOfFunds = true;
@@ -178,11 +197,14 @@ if (!process.argv.includes("--no-history")) {
     if (remedy === "refund") paid++;
     else if (++replaced % 2 === 1) markShipped(db, c.id, `1Z${String(c.id).padStart(8, "0")}`);
   }
+  report.payouts = { sent: paid, failed: payoutFailures, outOfFunds };
   await syncRecall(db, recall.id);
   console.log(`✓ past recall ${recall.id}: ${matched.totalCases} cases, ${paid} refunded by sandbox payout, ${replaced} replacements`);
 }
 
 console.log(`DB: ${await db.$count(t.sales)} sales, ${await db.$count(t.saleItems)} line items`);
+report.at = new Date().toISOString();
+writeSeedReport(report);
 }
 
 // Deterministic PRNG, so the history is identical on every machine and every Render boot.
