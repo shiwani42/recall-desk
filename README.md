@@ -7,7 +7,7 @@
 | | |
 | --- | --- |
 | **Live demo** | https://recall-desk-zi89.onrender.com (PayPal sandbox, no login; the free instance sleeps when idle, so the first load can take about a minute) |
-| **Demo video** | https://youtu.be/Kse_1R138iQ (a real run on the live site; the narration, music and sound effects are AI generated, and Claude Code drove the recording) |
+| **Demo video** | https://youtu.be/Kse_1R138iQ (a real run on the live site against the PayPal sandbox, so the money is test money and the buyers are test data; the narration, music and sound effects are AI generated, and Claude Code drove the recording) |
 | **Built for** | PayPal AI Hackathon. Sponsor tools: AG Grid (AG Studio), Channel3, Render |
 | **License** | MIT |
 
