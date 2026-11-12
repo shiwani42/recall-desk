@@ -102,6 +102,19 @@ export async function stillOnSale(product: Recalled): Promise<Listing[]> {
     .filter((l) => l.retailers.length > 0);
 }
 
+/** One product per brand first, then the rest in their original order, so a list isn't three of the same brand. */
+const diverse = (listings: Listing[]): Listing[] => {
+  const seen = new Set<string>();
+  const first: Listing[] = [];
+  const rest: Listing[] = [];
+  for (const l of listings) {
+    const key = norm(l.brand) || l.id;
+    (seen.has(key) ? rest : first).push(l);
+    seen.add(key);
+  }
+  return [...first, ...rest];
+};
+
 /** Where a set of alternatives came from: Channel3's similar-products endpoint, or a plain search. */
 export type AlternativesVia = "similar" | "search";
 
@@ -121,12 +134,13 @@ export async function alternativesFor(
   const query = product.brand ? product.name.replace(new RegExp(product.brand, "ig"), "").trim() : product.name;
   const filters = { availability: ["InStock"], price: { min_price: Math.round(price * 0.6), max_price: Math.round(price * 1.5) } };
   const usable = (products: Product[]) =>
-    products
-      .filter((p) => !brand || !(p.brands ?? []).some((b) => norm(b.name) === brand))
-      .filter((p) => !product.model || !norm(p.title).includes(norm(product.model)))
-      .map(toListing)
-      .filter((l) => l.retailers.length > 0 && l.image)
-      .slice(0, limit);
+    diverse(
+      products
+        .filter((p) => !brand || !(p.brands ?? []).some((b) => norm(b.name) === brand))
+        .filter((p) => !product.model || !norm(p.title).includes(norm(product.model)))
+        .map(toListing)
+        .filter((l) => l.retailers.length > 0 && l.image),
+    ).slice(0, limit);
   const why = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
   return cached(`alt:${query}:${product.brand}:${product.model}:${Math.round(price)}`, async () => {

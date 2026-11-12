@@ -118,6 +118,17 @@ describe("alternativesFor", () => {
     expect(paths(calls)).toEqual(["/v1/search", "/v1/search"]);
   });
 
+  it("prefers one product per brand, then tops up from the same brands", async () => {
+    mockChannel3({
+      own: [own],
+      similar: [product("g1", "Garvee A", "GARVEE"), product("g2", "Garvee B", "GARVEE"), product("g3", "Garvee C", "GARVEE"), product("l1", "Lasko A", "Lasko"), product("s1", "Slick A", "Slickblue")],
+    });
+    expect((await alternativesFor(heater, 3)).listings.map((l) => l.id)).toEqual(["g1", "l1", "s1"]);
+    clearChannel3Cache();
+    mockChannel3({ own: [own], similar: [product("g1", "Garvee A", "GARVEE"), product("g2", "Garvee B", "GARVEE"), product("l1", "Lasko A", "Lasko")] });
+    expect((await alternativesFor(heater, 3)).listings.map((l) => l.id)).toEqual(["g1", "l1", "g2"]);
+  });
+
   it("drops listings without an image or an in-stock offer, and respects the limit", async () => {
     const noImage = { ...product("n1", "Acme No Image", "Acme"), images: [] };
     const oos = { ...product("o1", "Acme Sold Out", "Acme"), offers: [{ ...product("o1", "x", "Acme").offers[0], availability: "OutOfStock" }] };
