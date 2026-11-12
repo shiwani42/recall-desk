@@ -20,6 +20,49 @@ Plus:
 - **Import past PayPal sales** with Transaction Search, including sales made outside this storefront. Fully refunded sales and sales without line items are skipped.
 - **Live money status.** Refunds and payouts are synced with PayPal ("money in flight" → resolved), including unclaimed payouts.
 - **Real email** over any SMTP provider: recall notices and status updates, with a demo-safe redirect.
+- **Analytics with an AI recall analyst** (`/analytics`, built on [AG Studio](https://www.ag-grid.com/studio/)). See below.
+- **Market check** with [Channel3](https://trychannel3.com) retailer data. See below.
+
+## Analytics: AG Studio + a Claude recall analyst
+
+`/analytics` is an [AG Studio](https://www.ag-grid.com/studio/) workspace over the ledger: sales, order lines, products,
+recalls and recall cases, joined by Studio's data engine (`components/analytics/data.ts`). Two built-in pages:
+
+- **Recall response**: affected order lines, exposure, refunded and in-flight money, remedy mix, affected buyers by state,
+  and a grid of every affected buyer. Cross-filters by recall.
+- **Sales exposure**: units by month and product (what's in customers' homes), how a refund would be paid today
+  (PayPal refund inside 180 days vs PayPal payout), units by state, and a pivot by product and refund route.
+
+Sellers can edit it, add widgets and pages, and save it (per browser). Polish beyond the stock components:
+
+- **Theme**: every Studio, grid and chart colour points at the app's CSS tokens (`components/analytics/theme.ts`), so it follows light and dark mode.
+- **Custom widget**: *Recall progress* (`RecallProgressWidget.tsx`) is the app's segmented status bar as a Studio widget. Map any status field and any
+  measure (cases, exposure, refunded); it honours page filters and cross-filters and has AI metadata, so agents can place it.
+
+**Studio Agent Framework on Claude.** AG Studio ships no model adapters, so `components/analytics/claude-adapter.ts` translates Studio's
+conversation items and AG-UI events to and from the Anthropic Messages API. It runs in the browser and calls `/api/ai/claude`,
+which holds the key, allowlists models (Claude Opus 5.5, Sonnet 5.5) and streams Claude's events back. The team (`components/analytics/ai.ts`):
+
+- **Recall analyst** (custom, primary): knows PayPal's 180-day refund window, payouts vs refunds and the remedy rules. Its own tools:
+  - `recall_exposure`: "what would recalling X cost?", using the real matching, remedy and refund-rail logic over the ledger. Writes nothing.
+  - `refresh_paypal_status`: re-reads PayPal for every refund and payout still in flight.
+  - `market_check`: Channel3 retailer data for a SKU.
+  - Studio's `viewSchema`, `viewReport` and `executeQuery` to read the data, and `delegate_to` to hand dashboard changes to…
+- **Studio's built-in agents** (lead, data, page, planning, widget), on the same Claude adapter. They build and edit the widgets.
+
+Needs `AG_STUDIO` (licence key) and `ANTHROPIC_API_KEY`. Without the key the dashboard works and the chat is hidden.
+
+## Market check: Channel3
+
+[Channel3](https://trychannel3.com) has normalized product data from 25,000+ retailers. Recall Desk calls its search API (`lib/channel3.ts`) for two
+questions the seller's own data can't answer:
+
+- **Is the recalled product still on sale?** The recall page lists retailers that still show the recalled model in stock, with prices, and points to
+  SaferProducts.gov for reporting it.
+- **What can a refunded buyer buy instead?** In-stock products of the same type from other brands, near the original price. Shown on the recall page,
+  on the buyer's recall page next to their refund, and to the analytics agent (`market_check`).
+
+Needs `CHANNEL3_API_KEY`. Results are cached for 6 hours.
 
 ## Run it
 
@@ -27,7 +70,7 @@ Plus:
 cp .env.example .env.local   # add PayPal sandbox Client ID + Secret
 npm install
 npm run paypal:check         # verify credentials
-npm run db:seed -- --reset   # create real sandbox sales (test card) + 3 older "legacy" sales
+npm run db:seed -- --reset   # real sandbox sales (test cards), imported history, and a past recall with sandbox payouts
 npm run dev                  # http://localhost:3000
 ```
 
@@ -37,6 +80,7 @@ npm run dev                  # http://localhost:3000
 | `/recalls/new` | Start a recall from the **recall watch**, a CPSC search or a pasted notice (AI), or from scratch |
 | `/recalls/[id]` | Affected buyers, recommended fix and why, notify, refund, mark shipped |
 | `/r/[token]` | **Buyer page** (linked from the notice): choose refund / replacement / repair |
+| `/analytics` | **AG Studio** dashboards over sales and recalls, with the Claude recall analyst |
 | `/sales` | SKU-level sales ledger built from PayPal captures. **Import from PayPal** pulls up to 3 years of past sales. |
 | `/outbox` | Every email sent to buyers, with delivery status and retry |
 | `/store` | Demo storefront. Buy with a sandbox PayPal account and the sale lands in the ledger |
@@ -55,12 +99,22 @@ npm run dev                  # http://localhost:3000
 Refund **rail**: a PayPal refund on the original capture if it's ≤ 180 days old; otherwise a PayPal payout to the buyer's email.
 Buyers can choose any remedy the recall offers. The recommendation is the default, not a restriction.
 
+## Demo data
+
+`npm run db:seed` creates:
+
+- **10 real sandbox sales**, captured with PayPal's sandbox test cards. The seed rotates cards because the sandbox starts declining a card (`PAYER_CANNOT_PAY`) after heavy use.
+- **4 legacy sales and 280 orders of imported history** over the last 14 months. These are synthetic and deterministic, with fictional `@example.com` buyers and **no PayPal capture**, so refunds on them go out as PayPal payouts. They give the dashboards something to show.
+- **A past recall** (the Stomp Rocket kit), run through the real pipeline: matched, notices logged, 25 refunds sent as **real sandbox payouts** and 15 replacements. The payouts stay *Money in flight* because PayPal reports them `UNCLAIMED`: the fictional buyers have no PayPal accounts.
+
 ## Stack
 
 - **Next.js 16** (App Router, Server Actions, `cacheComponents`), one deployable app
 - **PayPal**: JS SDK v6 (`@paypal/react-paypal-js/sdk-v6`) for checkout; `@paypal/paypal-server-sdk` for Orders, Payments (refunds); REST for Payouts
 - **SQLite** via **Drizzle ORM** + better-sqlite3. No DB server, and the file lives in `data/`. Schema: `lib/db/schema.ts`, migrations in `drizzle/` (applied automatically on startup)
 - **zod** validation on every Server Action, **vitest** tests
+- **AG Studio** (`ag-studio-react`) for analytics, with the Studio Agent Framework running on **Claude** (`@anthropic-ai/sdk`)
+- **Channel3** product search API for the market check
 
 ```
 lib/
@@ -117,7 +171,9 @@ Set `PAYPAL_DEBUG=1` in `.env.local` to log PayPal request and response bodies.
 | `SMTP_URL`, `EMAIL_FROM` | Real email delivery (any SMTP provider). Without it, emails are logged to the Outbox only. |
 | `EMAIL_REDIRECT_TO` | Demo safety: every buyer email goes to this one inbox instead. |
 | `APP_URL` | Public base URL for links in emails (defaults to the request host). |
-| `ANTHROPIC_API_KEY` | AI drafting from pasted notices (Claude `claude-opus-5-5`, structured output, server-side refusal fallback). |
+| `ANTHROPIC_API_KEY` | AI drafting from pasted notices (Claude `claude-opus-5-5`, structured output), and the analytics agents. |
+| `AG_STUDIO` | AG Studio licence key (removes the trial watermark). |
+| `CHANNEL3_API_KEY` | Market check on recall and buyer pages ([trychannel3.com/developers](https://trychannel3.com/developers)). |
 | `PAYPAL_WEBHOOK_ID` | Verifies `/api/paypal/webhook`, which keeps refunds and payouts in sync without clicking "Sync". |
 
 ## Known gaps

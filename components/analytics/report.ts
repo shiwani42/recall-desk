@@ -41,6 +41,8 @@ const response: AgPageState = {
     "remedy-mix": {
       type: "donut-chart",
       dataMapping: { categoryKey: [{ id: "cases.remedy" }], valueKey: [countd("cases.id")] },
+      // Sorted by remedy, not by size, so each remedy keeps its colour across charts.
+      sort: [{ field: { id: "cases.remedy" }, direction: "asc" }],
       format: title("Remedy mix"),
     },
     "buyers-by-state": {
