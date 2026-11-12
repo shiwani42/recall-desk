@@ -27,6 +27,7 @@ import { recallStudioTheme } from "./theme";
 if (process.env.NODE_ENV !== "production") enableStudioDevValidations();
 
 const STORAGE_KEY = "recall-desk.analytics.report.v1";
+const NAMES_KEY = "recall-desk.analytics.page-names.v1";
 
 const progressWidget = {
   id: PROGRESS_WIDGET,
@@ -79,6 +80,14 @@ const widgets = (base: AgWidgetsConfig<AgCoreDefaultRegistry>): any =>
     menu: [...(base.menu ?? []), { label: "Recall", widgetIds: [PROGRESS_WIDGET] } as never],
   });
 
+function loadNames(): Record<string, string> {
+  try {
+    return JSON.parse(localStorage.getItem(NAMES_KEY) ?? "{}");
+  } catch {
+    return {};
+  }
+}
+
 function loadSaved(): AgReportState | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -103,10 +112,15 @@ function Workspace({ data, licenseKey, aiEnabled }: Props) {
   const [initialState] = useState<AgReportState>(() => loadSaved() ?? defaultReport);
   const [pageId, setPageId] = useState(initialState.selectedPageId);
   const [pageIds, setPageIds] = useState(() => initialState.pages.map((p) => p.id));
+  // Tab titles for pages the analyst creates (Studio pages have no names of their own).
+  const [names, setNames] = useState<Record<string, string>>(loadNames);
   const [mode, setMode] = useState<AgStudioMode>("view");
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const studioData = useMemo(() => buildStudioData(data), [data]);
-  const ai = useMemo(() => (aiEnabled ? buildAi() : undefined), [aiEnabled]);
+  const ai = useMemo(
+    () => (aiEnabled ? buildAi((id, title) => setNames((n) => ({ ...n, [id]: title }))) : undefined),
+    [aiEnabled],
+  );
 
   const showPage = (id: string) => {
     const api = apiRef.current;
@@ -114,11 +128,21 @@ function Workspace({ data, licenseKey, aiEnabled }: Props) {
     api.setState({ ...api.getState(), selectedPageId: id });
     setPageId(id);
   };
+  // Studio shows its AI panel in edit mode only: switch to edit with the chat open.
+  const askAnalyst = () => {
+    const api = apiRef.current;
+    if (api) {
+      const st = api.getState();
+      api.setState({ ...st, panels: { ...st.panels, ai: { ...st.panels?.ai, collapsed: false } } });
+    }
+    setMode("edit");
+  };
   const save = () => {
     const api = apiRef.current;
     if (!api) return;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(api.getState()));
+      localStorage.setItem(NAMES_KEY, JSON.stringify(names));
       setSavedAt(new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }));
     } catch {
       setSavedAt(null);
@@ -129,16 +153,18 @@ function Workspace({ data, licenseKey, aiEnabled }: Props) {
     if (!api) return;
     try {
       localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(NAMES_KEY);
     } catch {}
     api.setState(defaultReport);
     api.clearHistory();
     setPageId(defaultReport.selectedPageId);
     setPageIds(defaultReport.pages.map((p) => p.id));
+    setNames({});
     setSavedAt(null);
   };
 
   // Pages come from Studio's state, so pages the agents add get a tab too.
-  const pages = pageIds.map((id, i) => ({ id, label: PAGES.find((p) => p.id === id)?.label ?? `Page ${i + 1}` }));
+  const pages = pageIds.map((id, i) => ({ id, label: names[id] ?? PAGES.find((p) => p.id === id)?.label ?? `Page ${i + 1}` }));
 
   return (
     <div className="flex h-full flex-col">
@@ -158,9 +184,13 @@ function Workspace({ data, licenseKey, aiEnabled }: Props) {
         </nav>
         <div className="ml-auto flex items-center gap-2 text-sm">
           {ai && (
-            <span className="hidden items-center gap-1 text-xs text-muted sm:flex">
-              <Sparkles size={13} aria-hidden /> Ask the recall analyst in the chat panel
-            </span>
+            <button
+              type="button"
+              onClick={askAnalyst}
+              className="flex items-center gap-1.5 rounded-md border border-line px-2.5 py-1.5 transition-colors duration-150 hover:bg-background"
+            >
+              <Sparkles size={14} aria-hidden className="text-accent" /> Ask the analyst
+            </button>
           )}
           {savedAt && <span className="text-xs text-muted">Saved {savedAt}</span>}
           <button

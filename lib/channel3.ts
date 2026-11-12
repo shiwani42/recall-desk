@@ -14,6 +14,8 @@ type Offer = { availability: "InStock" | "OutOfStock"; domain: string; url: stri
 type Product = {
   id: string;
   title: string;
+  description?: string | null;
+  key_features?: string[] | null;
   brands?: { id: string; name: string }[];
   images?: { url: string; is_main_image?: boolean }[];
   offers?: Offer[];
@@ -76,7 +78,8 @@ export async function stillOnSale(product: Recalled): Promise<Listing[]> {
   return cached(`onsale:${product.brand}:${product.model}`, async () => {
     const products = await search({ query: `${product.brand ?? ""} ${product.model}`.trim(), limit: 20 });
     return products
-      .filter((p) => norm(p.title).includes(model))
+      // The model number must appear in the listing itself; brand and product type alone don't count.
+      .filter((p) => norm([p.title, p.description ?? "", ...(p.key_features ?? [])].join(" ")).includes(model))
       .map(toListing)
       .filter((l) => l.retailers.length > 0);
   });

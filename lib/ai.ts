@@ -46,11 +46,8 @@ let client: Anthropic | undefined;
 export async function draftFromNotice(noticeText: string, catalog: CatalogItem[]): Promise<NoticeDraft> {
   client ??= new Anthropic();
   const response = await client.beta.messages.parse({
-    model: "claude-opus-5-5",
+    model: "claude-haiku-5-5",
     max_tokens: 16000,
-    // Server-side fallback: if the request is declined, it's retried on another model in the same call.
-    betas: ["server-side-fallback-2026-07-01"],
-    fallbacks: "default",
     output_config: { effort: "medium", format: betaZodOutputFormat(NoticeDraft) },
     system: SYSTEM,
     messages: [

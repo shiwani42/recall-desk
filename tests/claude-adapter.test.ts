@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { AgAiConversationItem, AgAiEvent, AgLlmRequest } from "ag-studio";
-import { claudeAdapter } from "@/components/analytics/claude-adapter";
+import { claudeAdapter, coerceArgs } from "@/components/analytics/claude-adapter";
 
 // A canned Claude stream: some text, then a tool call whose JSON arrives in two pieces.
 const EVENTS = [
-  { type: "message_start", message: { id: "msg_1", model: "claude-opus-5-5", usage: { input_tokens: 12 } } },
+  { type: "message_start", message: { id: "msg_1", model: "claude-haiku-5-5", usage: { input_tokens: 12 } } },
   { type: "content_block_start", index: 0, content_block: { type: "text", text: "" } },
   { type: "content_block_delta", index: 0, delta: { type: "text_delta", text: "Checking " } },
   { type: "content_block_delta", index: 0, delta: { type: "text_delta", text: "exposure." } },
@@ -38,7 +38,7 @@ describe("claudeAdapter", () => {
   it("turns Claude's stream into Studio events and output items", async () => {
     const fetchMock = vi.fn(async () => sse(EVENTS));
     vi.stubGlobal("fetch", fetchMock);
-    const handler = claudeAdapter({ model: "claude-opus-5-5" }).executeTurn(
+    const handler = claudeAdapter({ model: "claude-haiku-5-5" }).executeTurn(
       request([{ id: "u1", kind: "input", type: "message", role: "user", status: "completed", content: [{ type: "text", text: "Recall the heaters?" }] }]),
     );
     const events: AgAiEvent[] = [];
@@ -47,7 +47,7 @@ describe("claudeAdapter", () => {
 
     expect(events.map((e) => e.type)).toEqual([
       "TEXT_MESSAGE_START", "TEXT_MESSAGE_CONTENT", "TEXT_MESSAGE_CONTENT", "TEXT_MESSAGE_END",
-      "TOOL_CALL_START", "TOOL_CALL_ARGS", "TOOL_CALL_ARGS", "TOOL_CALL_END",
+      "TOOL_CALL_START", "TOOL_CALL_ARGS", "TOOL_CALL_END",
     ]);
     expect(res.status).toBe("completed");
     expect(res.output).toEqual([
@@ -64,7 +64,7 @@ describe("claudeAdapter", () => {
   it("encodes tool calls and results as Claude tool_use / tool_result turns", async () => {
     const fetchMock = vi.fn(async () => sse([{ type: "message_start", message: { id: "m" } }, { type: "message_stop" }]));
     vi.stubGlobal("fetch", fetchMock);
-    const handler = claudeAdapter({ model: "claude-opus-5-5" }).executeTurn(
+    const handler = claudeAdapter({ model: "claude-haiku-5-5" }).executeTurn(
       request([
         { id: "s", kind: "input", type: "message", role: "system", status: "completed", content: [{ type: "text", text: "Page: Recall response" }] },
         { id: "u", kind: "input", type: "message", role: "user", status: "completed", content: [{ type: "text", text: "Recall the heaters?" }] },
@@ -95,7 +95,7 @@ describe("claudeAdapter", () => {
         { type: "message_stop" },
       ]),
     ));
-    const handler = claudeAdapter({ model: "claude-opus-5-5" }).executeTurn(
+    const handler = claudeAdapter({ model: "claude-haiku-5-5" }).executeTurn(
       request([{ id: "u", kind: "input", type: "message", role: "user", status: "completed", content: [{ type: "text", text: "Name it" }] }], {
         responseFormat: { type: "json", name: "thread_title", schema: { type: "object", properties: { title: { type: "string" } } } },
       }),
@@ -107,8 +107,37 @@ describe("claudeAdapter", () => {
 
   it("rejects `complete` with the proxy's error", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => Response.json({ error: { message: "The analyst is not configured" } }, { status: 503 })));
-    const handler = claudeAdapter({ model: "claude-opus-5-5" }).executeTurn(request([]));
+    const handler = claudeAdapter({ model: "claude-haiku-5-5" }).executeTurn(request([]));
     for await (const e of handler.stream) void e;
     await expect(handler.complete).rejects.toThrow("The analyst is not configured");
+  });
+});
+
+describe("coerceArgs", () => {
+  const schema = {
+    type: "object",
+    properties: {
+      type: {
+        anyOf: [
+          { type: "object", properties: { id: { type: "string", enum: ["data"] } } },
+          { type: "object", properties: { id: { type: "string", enum: ["page"] }, pageId: { type: "string" } } },
+        ],
+      },
+      instructions: { type: "string" },
+    },
+  };
+
+  it("rebuilds a flattened { id } variant, moving its options in", () => {
+    expect(coerceArgs({ type: "page", pageId: "response", instructions: "x" }, schema)).toEqual({ type: { id: "page", pageId: "response" }, instructions: "x" });
+    expect(coerceArgs({ type: "page", id: "page", pageId: "response", instructions: "x" }, schema)).toEqual({ type: { id: "page", pageId: "response" }, instructions: "x" });
+  });
+
+  it("moves options in when the variant is only half nested", () => {
+    expect(coerceArgs({ type: { id: "page" }, pageId: "p2", instructions: "x" }, schema)).toEqual({ type: { id: "page", pageId: "p2" }, instructions: "x" });
+  });
+
+  it("leaves correct arguments alone", () => {
+    const ok = { type: { id: "data" }, instructions: "x" };
+    expect(coerceArgs(ok, schema)).toEqual(ok);
   });
 });

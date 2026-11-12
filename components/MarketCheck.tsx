@@ -53,7 +53,9 @@ export default async function MarketCheck({ skus }: { skus: string[] }) {
                   ) : (
                     <p className="flex items-center gap-2 text-sm text-ok">
                       <CheckCircle2 size={16} aria-hidden />
-                      {p.model ? `${p.brand ?? ""} ${p.model}`.trim() : p.name} isn&apos;t listed in stock at any retailer Channel3 tracks.
+                      {p.model
+                        ? `No in-stock listing at the retailers Channel3 tracks names model ${p.model}.`
+                        : `${p.name} isn't listed in stock at any retailer Channel3 tracks.`}
                     </p>
                   )}
                 </div>

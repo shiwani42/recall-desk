@@ -41,14 +41,21 @@ Sellers can edit it, add widgets and pages, and save it (per browser). Polish be
 
 **Studio Agent Framework on Claude.** AG Studio ships no model adapters, so `components/analytics/claude-adapter.ts` translates Studio's
 conversation items and AG-UI events to and from the Anthropic Messages API. It runs in the browser and calls `/api/ai/claude`,
-which holds the key, allowlists models (Claude Opus 5.5, Sonnet 5.5) and streams Claude's events back. The team (`components/analytics/ai.ts`):
+which holds the key, pins the model (Claude Haiku 5.5, medium effort, thinking off) and streams Claude's events back. The team (`components/analytics/ai.ts`):
 
 - **Recall analyst** (custom, primary): knows PayPal's 180-day refund window, payouts vs refunds and the remedy rules. Its own tools:
   - `recall_exposure`: "what would recalling X cost?", using the real matching, remedy and refund-rail logic over the ledger. Writes nothing.
   - `refresh_paypal_status`: re-reads PayPal for every refund and payout still in flight.
   - `market_check`: Channel3 retailer data for a SKU.
+  - `create_page`: Studio's agents work on the selected page and can't add pages, so the analyst adds and names one first.
   - Studio's `viewSchema`, `viewReport` and `executeQuery` to read the data, and `delegate_to` to hand dashboard changes to…
 - **Studio's built-in agents** (lead, data, page, planning, widget), on the same Claude adapter. They build and edit the widgets.
+
+Open it with **Ask the analyst** (Studio's chat panel lives in edit mode). Try: *"What would it cost to recall every HTR-200 sold in the last 6 months? Split it by how the money would move, and add widgets for it on a new page."* The analyst runs the what-if, creates the page, and Studio's planning, page and widget agents build it.
+
+Two adapter details that made the multi-agent flow work with Claude: the conversation always ends on a user turn (no assistant prefill), and Studio's
+`{ id, ...options }` tool arguments are rebuilt when Claude flattens them (`coerceArgs`, unit-tested). The proxy only accepts same-origin requests
+and rate-limits per visitor, since the demo is public. `AI_DEBUG=1` logs each model call and tool result on the server.
 
 Needs `AG_STUDIO` (licence key) and `ANTHROPIC_API_KEY`. Without the key the dashboard works and the chat is hidden.
 
@@ -171,7 +178,7 @@ Set `PAYPAL_DEBUG=1` in `.env.local` to log PayPal request and response bodies.
 | `SMTP_URL`, `EMAIL_FROM` | Real email delivery (any SMTP provider). Without it, emails are logged to the Outbox only. |
 | `EMAIL_REDIRECT_TO` | Demo safety: every buyer email goes to this one inbox instead. |
 | `APP_URL` | Public base URL for links in emails (defaults to the request host). |
-| `ANTHROPIC_API_KEY` | AI drafting from pasted notices (Claude `claude-opus-5-5`, structured output), and the analytics agents. |
+| `ANTHROPIC_API_KEY` | AI drafting from pasted notices (Claude Haiku 5.5, structured output), and the analytics agents. |
 | `AG_STUDIO` | AG Studio licence key (removes the trial watermark). |
 | `CHANNEL3_API_KEY` | Market check on recall and buyer pages ([trychannel3.com/developers](https://trychannel3.com/developers)). |
 | `PAYPAL_WEBHOOK_ID` | Verifies `/api/paypal/webhook`, which keeps refunds and payouts in sync without clicking "Sync". |

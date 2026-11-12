@@ -38,6 +38,7 @@ export function recallExposure(db: DB, input: ExposureInput, now = new Date()) {
   const byRemedy: Record<string, { lines: number; dollars: number }> = {};
   const byRail: Record<string, { lines: number; dollars: number }> = {};
   const byState: Record<string, number> = {};
+  const byReason: Record<string, number> = {};
   const buyers = new Set<string>();
   let units = 0;
   let exposureCents = 0;
@@ -56,6 +57,9 @@ export function recallExposure(db: DB, input: ExposureInput, now = new Date()) {
     });
     if (rec.remedy === "replace" && stockLeft !== null) stockLeft -= item.quantity;
     const rail = rec.remedy === "refund" ? (rec.refundRail === "paypal_refund" ? "PayPal refund" : "PayPal payout") : "No money moves";
+    // First sentence of the engine's reason, e.g. "High-severity hazard: a refund gets the unit out of use fastest, with nothing new to ship."
+    const reason = `${rec.remedy}: ${rec.reason.split(/(?<=\.)\s/)[0]}`;
+    byReason[reason] = (byReason[reason] ?? 0) + 1;
     (byRemedy[rec.remedy] ??= { lines: 0, dollars: 0 }).lines++;
     byRemedy[rec.remedy].dollars += dollars(cents);
     (byRail[rail] ??= { lines: 0, dollars: 0 }).lines++;
@@ -80,6 +84,7 @@ export function recallExposure(db: DB, input: ExposureInput, now = new Date()) {
     cashOut: Math.round(((byRail["PayPal refund"]?.dollars ?? 0) + (byRail["PayPal payout"]?.dollars ?? 0)) * 100) / 100,
     byRemedy: round(byRemedy),
     byMoneyRail: round(byRail),
+    byReason,
     topStates: Object.entries(byState).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([state, u]) => ({ state, units: u })),
     replacementStockLeft: stockLeft,
   };

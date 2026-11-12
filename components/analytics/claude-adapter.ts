@@ -68,6 +68,9 @@ function encode(items: AgAiConversationItem[]): { system: string[]; messages: Me
     }
   }
   if (messages[0]?.role !== "user") messages.unshift({ role: "user", content: [{ type: "text", text: "Continue." }] });
+  // Claude's newer models take no assistant prefill: the conversation must end on a user turn.
+  // Studio asks for a follow-up (a summary, a title) right after an assistant reply.
+  if (messages.at(-1)?.role === "assistant") messages.push({ role: "user", content: [{ type: "text", text: "Continue." }] });
   return { system, messages };
 }
 
@@ -78,6 +81,39 @@ function parseArgs(json: string): unknown {
   } catch {
     return {};
   }
+}
+
+type Schema = { type?: string; properties?: Record<string, Schema>; anyOf?: Schema[]; enum?: unknown[] };
+
+/**
+ * Claude doesn't enforce nested tool schemas, and flattens one shape Studio uses a lot: a field that
+ * takes one of several `{ id: "...", ...options }` objects (delegate_to's `type`, for example).
+ * Claude sends `{ type: "page", pageId: "x" }` where Studio wants `{ type: { id: "page", pageId: "x" } }`.
+ * Rebuild the object from the matching variant, moving its options in from the top level.
+ */
+export function coerceArgs(args: Record<string, unknown>, schema: unknown): Record<string, unknown> {
+  const props = (schema as Schema | undefined)?.properties ?? {};
+  const out = { ...args };
+  for (const [key, prop] of Object.entries(props)) {
+    const variants = prop.anyOf?.filter((v) => v.properties?.id?.enum);
+    if (!variants?.length) continue;
+    const value = out[key];
+    const nested = value && typeof value === "object" ? (value as Record<string, unknown>) : null;
+    // The variant id: the flattened string, the nested object's own id, or a stray top-level id.
+    const id = typeof value === "string" ? value : typeof nested?.id === "string" ? nested.id : typeof out.id === "string" ? out.id : null;
+    if (!id) continue;
+    const variant = variants.find((v) => v.properties!.id.enum!.includes(id));
+    if (!variant) continue;
+    const obj: Record<string, unknown> = { ...(nested ?? {}), id };
+    // Move the variant's options in from the top level (fully or half flattened).
+    for (const k of Object.keys(variant.properties!)) {
+      if (k !== "id" && k in out && !(k in props) && !(k in obj)) obj[k] = out[k];
+      if (k !== "id" && !(k in props)) delete out[k];
+    }
+    if (!("id" in props)) delete out.id;
+    out[key] = obj;
+  }
+  return out;
 }
 
 const toTool = (t: AgAiToolSchema) => ({
@@ -112,6 +148,7 @@ type Open = { kind: "text" | "tool" | "json"; id: string; name?: string; text: s
 
 /** Claude stream events -> AG-UI events, collecting the final output as it goes. */
 class Translator {
+  constructor(private readonly schemas: Map<string, Schema> = new Map()) {}
   private open = new Map<number, Open>();
   readonly output: AgAiOutputItem[] = [];
   id = `msg_${crypto.randomUUID()}`;
@@ -153,17 +190,20 @@ class Translator {
         const delta = d.type === "text_delta" ? d.text : d.type === "input_json_delta" ? d.partial_json : "";
         if (!delta) return [];
         o.text += delta;
-        return o.kind === "tool"
-          ? [{ type: "TOOL_CALL_ARGS", toolCallId: o.id, delta } as AgAiEvent]
-          : [{ type: "TEXT_MESSAGE_CONTENT", messageId: o.id, delta } as AgAiEvent];
+        // Tool arguments are sent once, complete and corrected, when the block ends.
+        return o.kind === "tool" ? [] : [{ type: "TEXT_MESSAGE_CONTENT", messageId: o.id, delta } as AgAiEvent];
       }
       case "content_block_stop": {
         const o = this.open.get(e.index);
         if (!o) return [];
         this.open.delete(e.index);
         if (o.kind === "tool") {
-          this.output.push({ id: o.id, kind: "output", type: "function_call", callId: o.id, name: o.name!, arguments: o.text || "{}", status: "completed" });
-          return [{ type: "TOOL_CALL_END", toolCallId: o.id } as AgAiEvent];
+          const args = JSON.stringify(coerceArgs(parseArgs(o.text) as Record<string, unknown>, this.schemas.get(o.name!)));
+          this.output.push({ id: o.id, kind: "output", type: "function_call", callId: o.id, name: o.name!, arguments: args, status: "completed" });
+          return [
+            { type: "TOOL_CALL_ARGS", toolCallId: o.id, delta: args } as AgAiEvent,
+            { type: "TOOL_CALL_END", toolCallId: o.id } as AgAiEvent,
+          ];
         }
         this.output.push({
           id: o.id,
@@ -232,7 +272,7 @@ async function* streamClaude(endpoint: string, body: unknown, t: Translator, sig
 export function claudeAdapter({ endpoint = "/api/ai/claude", model }: { endpoint?: string; model: string }): AgLlmAdapter {
   return {
     executeTurn(request, options): AgLlmResponseHandler {
-      const t = new Translator();
+      const t = new Translator(new Map((request.tools ?? []).map((tool) => [tool.name, tool.parameters as Schema])));
       let resolve!: (r: AgLlmResponse) => void;
       let reject!: (e: Error) => void;
       const complete = new Promise<AgLlmResponse>((res, rej) => {
