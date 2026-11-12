@@ -2,6 +2,22 @@
 
 **Live demo:** https://recall-desk-zi89.onrender.com (PayPal sandbox; the free instance sleeps when idle, so the first load can take about a minute)
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/shiwani42/recall-desk)
+
+### Try it in 2 minutes
+
+1. **Home** (`/`): the dark card is the **recall watch**. A real US government (CPSC) recall of the DREO DR-HSH015 heater matches a product in the sales ledger.
+2. **Open the Stomp Rocket recall** under "Your recalls": every affected buyer, the recommended fix and why, and real PayPal sandbox refunds and payouts (IDs in the Status column). The **Market check** panel is live Channel3 retailer data.
+3. **The buyer's view**: open **Outbox**, expand a notice and follow its link (or use "Copy buyer link" in a row's ⋯ menu). Choosing a remedy there moves real sandbox money.
+4. **Analytics** (`/analytics`): the AG Studio dashboard. Click **Ask the analyst** and try *"What would it cost to recall every HTR-200 sold in the last 6 months? Split it by how the money would move, and add widgets for it on a new page."*
+5. **Start a recall yourself**: **New recall** → Recall watch → *Use this notice* (DREO) → create, notify, apply refunds.
+
+The storefront (`/store`) takes PayPal sandbox payments from a sandbox personal account (developer.paypal.com → Sandbox → Accounts); the sale lands in the ledger.
+
+### Tools used
+
+PayPal (JS SDK v6 checkout, Orders, Payments refunds, Payouts, Transaction Search, Webhooks) · Claude Haiku 5.5 (Anthropic SDK) · AG Studio + AG Grid (dashboards, custom widget, Studio Agent Framework) · Channel3 (product search API) · Render (hosting, blueprint) · US CPSC recalls API · Next.js 16, React 19, Tailwind 4, SQLite + Drizzle, Vitest
+
 **When a product is recalled, small sellers rarely know who bought it. PayPal does.**
 
 Every PayPal payment carries SKU-level line items, the buyer's contact details and a shipping address.
