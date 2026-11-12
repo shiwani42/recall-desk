@@ -64,7 +64,7 @@ export default async function MarketCheck({ skus }: { skus: string[] }) {
                   <div>
                     <p className="text-sm font-medium">Safe alternatives to suggest to refunded buyers</p>
                     <p className="text-xs text-muted">
-                      {r.alternativesVia === "similar" ? "Channel3's closest matches to the recalled product" : "Same kind of product"}, other brands, in stock near{" "}
+                      {r.alternativesVia === "similar" ? "Channel3's most similar products" : "Same kind of product"}, other brands, in stock near{" "}
                       {formatMoney(p.unitPriceCents)}. Also shown on the buyer&apos;s recall page.
                     </p>
                     <Alternatives items={r.alternatives} />

@@ -94,7 +94,7 @@ When a product is recalled, small online sellers often don't know who bought it.
 
 **Channel3.** Recall Desk calls Channel3's product search and similar-products APIs (`lib/channel3.ts`) for two recall questions a seller's own data can't answer.
 1. **Is the recalled product still on sale?** We search by brand and model, keep only listings whose own text contains the model number, and show the retailers still listing it in stock, with prices and a link to report it on SaferProducts.gov.
-2. **What can a refunded buyer buy instead?** When the recalled product itself is in Channel3's catalog, we seed `POST /v1/similar` with it and keep the in-stock results from other brands priced near the original. When it isn't (or that call fails), we search the product type with the same filters. Either way the recalled brand and model are excluded.
+2. **What can a refunded buyer buy instead?** We seed `POST /v1/similar` with the recalled product's own Channel3 listing when we can find it by model number, otherwise with the closest in-stock match to its description, and keep the in-stock results from other brands priced near the original. If that call fails or leaves nothing usable, we search the product type with the same filters. Either way the recalled brand and model are excluded.
 
 The alternatives appear on the seller's recall page, on the buyer's private recall page next to their refund, and as the analytics agent's `market_check` tool.
 

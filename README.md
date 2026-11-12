@@ -83,7 +83,7 @@ questions the seller's own data can't answer:
 
 - **Is the recalled product still on sale?** The recall page lists retailers that still show the recalled model in stock, with prices, and points to
   SaferProducts.gov for reporting it.
-- **What can a refunded buyer buy instead?** In-stock products from other brands, near the original price. If the recalled product itself is in Channel3's catalog (its model number appears in a listing), they are the products Channel3 finds most similar to it (`POST /v1/similar`, seeded with that listing); otherwise a search by product type. Shown on the recall page,
+- **What can a refunded buyer buy instead?** In-stock products from other brands, near the original price. They are the products Channel3 finds most similar (`POST /v1/similar`), seeded with the recalled product's own listing when its model number is found, otherwise with the closest in-stock match to its description. If that call fails or has nothing usable, it falls back to a search by product type. Shown on the recall page,
   on the buyer's recall page next to their refund, and to the analytics agent (`market_check`).
 
 Needs `CHANNEL3_API_KEY`. Results are cached for 6 hours.

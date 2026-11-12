@@ -14,6 +14,7 @@ const product = (id: string, title: string, brand: string, price = 45) => ({
 const heater = { name: "DREO Compact Ceramic Space Heater", brand: "DREO", model: "DR-HSH015", unitPriceCents: 4999 };
 const OWN_QUERY = "DREO DR-HSH015";
 const own = product("own1", "DREO DR-HSH015 Ceramic Space Heater", "DREO", 49.99);
+const paths = (calls: Call[]) => calls.map((c) => c.path);
 
 // Replies per endpoint; `similar` may be a status code to simulate an error.
 function mockChannel3(opts: { own?: unknown[]; type?: unknown[]; similar?: unknown[] | number }) {
@@ -25,9 +26,7 @@ function mockChannel3(opts: { own?: unknown[]; type?: unknown[]; similar?: unkno
       const body = JSON.parse(init.body);
       calls.push({ path, body });
       if (path === "/v1/similar") {
-        return typeof opts.similar === "number"
-          ? new Response("boom", { status: opts.similar })
-          : Response.json({ products: opts.similar ?? [] });
+        return typeof opts.similar === "number" ? new Response("boom", { status: opts.similar }) : Response.json({ products: opts.similar ?? [] });
       }
       return Response.json({ products: (body.query === OWN_QUERY ? opts.own : opts.type) ?? [] });
     }),
@@ -45,13 +44,13 @@ afterEach(() => {
 });
 
 describe("alternativesFor", () => {
-  it("asks /v1/similar about the recalled product itself and keeps only other brands' in-stock products", async () => {
+  it("seeds /v1/similar with the recalled product's own listing and keeps only other brands' in-stock products", async () => {
     const calls = mockChannel3({
       own: [own],
       similar: [product("a1", "Acme Mini Heater", "Acme"), product("d2", "DREO Tower Heater", "DREO"), product("m3", "Knockoff DR-HSH015 Heater", "Other")],
     });
     const r = await alternativesFor(heater);
-    expect(r.via).toBe("similar");
+    expect(r).toMatchObject({ via: "similar", seed: "recalled product" });
     expect(r.note).toBeUndefined();
     expect(r.listings.map((l) => l.id)).toEqual(["a1"]);
 
@@ -65,13 +64,44 @@ describe("alternativesFor", () => {
     expect(calls.map((c) => c.body.query).filter(Boolean)).toEqual([OWN_QUERY]);
   });
 
-  it("falls back to a product-type search when /v1/similar errors", async () => {
+  it("seeds with the closest in-stock match when the model isn't in any listing", async () => {
+    const calls = mockChannel3({
+      own: [product("x", "Some Other Heater", "Acme")],
+      type: [product("d1", "DREO Tower Heater", "DREO"), product("t1", "Acme Space Heater", "Acme"), product("t2", "Brandb Space Heater", "Brandb")],
+      similar: [product("s1", "Zeta Ceramic Heater", "Zeta")],
+    });
+    const r = await alternativesFor(heater);
+    expect(r).toMatchObject({ via: "similar", seed: "closest match" });
+    expect(r.listings.map((l) => l.id)).toEqual(["s1"]);
+    expect(paths(calls)).toEqual(["/v1/search", "/v1/search", "/v1/similar"]);
+    // The seed skips the recalled brand's own product, and there's no brand id to exclude.
+    const body = calls.find((c) => c.path === "/v1/similar")!.body;
+    expect(body.product_id).toBe("t1");
+    expect(body.filters).not.toHaveProperty("exclude_brand_ids");
+  });
+
+  it("seeds from a search for the product type when it has no model number", async () => {
+    const calls = mockChannel3({ type: [product("t1", "Acme Space Heater", "Acme")], similar: [product("s1", "Zeta Ceramic Heater", "Zeta")] });
+    const r = await alternativesFor({ ...heater, model: null });
+    expect(r).toMatchObject({ via: "similar", seed: "closest match" });
+    expect(paths(calls)).toEqual(["/v1/search", "/v1/similar"]);
+  });
+
+  it("falls back to the product-type search when /v1/similar errors", async () => {
     const calls = mockChannel3({ own: [own], similar: 500, type: [product("t1", "Acme Space Heater", "Acme")] });
     const r = await alternativesFor(heater);
     expect(r.via).toBe("search");
     expect(r.note).toMatch(/\/v1\/similar failed: Channel3 500/);
     expect(r.listings.map((l) => l.id)).toEqual(["t1"]);
-    expect(calls.map((c) => c.path)).toEqual(["/v1/search", "/v1/similar", "/v1/search"]);
+    expect(paths(calls)).toEqual(["/v1/search", "/v1/similar", "/v1/search"]);
+  });
+
+  it("reuses the search it already made when a closest-match seed's /v1/similar call fails", async () => {
+    const calls = mockChannel3({ type: [product("t1", "Acme Space Heater", "Acme")], similar: 422 });
+    const r = await alternativesFor({ ...heater, model: null });
+    expect(r).toMatchObject({ via: "search", listings: [{ id: "t1" }] });
+    expect(r.note).toMatch(/Channel3 422/);
+    expect(paths(calls)).toEqual(["/v1/search", "/v1/similar"]);
   });
 
   it("falls back when /v1/similar leaves nothing usable", async () => {
@@ -81,20 +111,11 @@ describe("alternativesFor", () => {
     expect(r.note).toMatch(/returned 1 product\(s\), none usable/);
   });
 
-  it("doesn't call /v1/similar when the model number isn't in any listing (not the recalled product)", async () => {
-    const calls = mockChannel3({ own: [product("x", "Some Other Heater", "Acme")], type: [product("t1", "Acme Space Heater", "Acme")] });
+  it("uses search alone when there is nothing to seed with", async () => {
+    const calls = mockChannel3({ own: [], type: [] });
     const r = await alternativesFor(heater);
-    expect(r.via).toBe("search");
-    expect(r.note).toBe("DR-HSH015 isn't named in any Channel3 listing");
-    expect(calls.some((c) => c.path === "/v1/similar")).toBe(false);
-  });
-
-  it("goes straight to search for a product with no model number", async () => {
-    const calls = mockChannel3({ type: [product("t1", "Acme Space Heater", "Acme")] });
-    const r = await alternativesFor({ ...heater, model: null });
-    expect(r.via).toBe("search");
-    expect(r.note).toBe("no model number to look up");
-    expect(calls.map((c) => c.path)).toEqual(["/v1/search"]);
+    expect(r).toMatchObject({ via: "search", listings: [], note: "no in-stock match to seed /v1/similar with" });
+    expect(paths(calls)).toEqual(["/v1/search", "/v1/search"]);
   });
 
   it("drops listings without an image or an in-stock offer, and respects the limit", async () => {
@@ -110,7 +131,7 @@ describe("marketCheck", () => {
   it("reports where the alternatives came from", async () => {
     mockChannel3({ own: [own], similar: [product("a1", "Acme Mini Heater", "Acme")] });
     const r = await marketCheck(heater);
-    expect(r).toMatchObject({ enabled: true, alternativesVia: "similar" });
+    expect(r).toMatchObject({ enabled: true, alternativesVia: "similar", alternativesSeed: "recalled product" });
     // And the recalled model is still on sale at a retailer.
     expect(r.enabled && r.onSale.map((l) => l.id)).toEqual(["own1"]);
   });

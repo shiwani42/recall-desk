@@ -12,5 +12,5 @@ export async function POST(request: Request) {
   const r = await marketCheck(product);
   if (!r.enabled) return Response.json({ error: "Channel3 is not configured (CHANNEL3_API_KEY)." }, { status: 503 });
   const brief = (ls: typeof r.onSale) => ls.map((l) => ({ title: l.title, brand: l.brand, retailers: l.retailers.slice(0, 3) }));
-  return Response.json({ sku: product.sku, product: product.name, stillOnSale: brief(r.onSale), safeAlternatives: brief(r.alternatives), alternativesFrom: r.alternativesVia, alternativesNote: r.alternativesNote, error: r.error });
+  return Response.json({ sku: product.sku, product: product.name, stillOnSale: brief(r.onSale), safeAlternatives: brief(r.alternatives), alternativesFrom: r.alternativesVia, alternativesSeed: r.alternativesSeed, alternativesNote: r.alternativesNote, error: r.error });
 }

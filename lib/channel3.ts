@@ -3,7 +3,7 @@
 //   1. Is the recalled product still for sale elsewhere, and where? (search by brand + model)
 //   2. What safe, in-stock alternative can we point a refunded buyer to? (the products Channel3 finds
 //      most similar to the recalled one via POST /v1/similar, other brands only, near the original
-//      price; a search by product type when the recalled product isn't in Channel3 or that call fails)
+//      price; a search by product type when there is nothing to seed it with or that call fails)
 // Enabled when CHANNEL3_API_KEY is set. Results are cached in memory for a few hours.
 
 const API = process.env.CHANNEL3_BASE_URL ?? "https://api.trychannel3.com";
@@ -107,14 +107,14 @@ export type AlternativesVia = "similar" | "search";
 
 /**
  * In-stock alternatives from other brands, priced near the recalled product.
- *  1. If the recalled product itself is in Channel3's catalog (its model number is in a listing), ask
- *     POST /v1/similar for the products nearest to it.
- *  2. Otherwise, or if that call fails or leaves nothing usable, search by product type (the fallback).
+ *  1. Ask POST /v1/similar for the products nearest to a seed: the recalled product's own Channel3
+ *     listing when its model number is in one, otherwise the closest in-stock match to its description.
+ *  2. If there's no seed, that call fails, or nothing usable comes back, use the product-type search.
  */
 export async function alternativesFor(
   product: Recalled,
   limit = 3,
-): Promise<{ listings: Listing[]; via: AlternativesVia; /** Why /v1/similar wasn't used, when it wasn't. */ note?: string }> {
+): Promise<{ listings: Listing[]; via: AlternativesVia; seed?: "recalled product" | "closest match"; /** Why /v1/similar wasn't used, when it wasn't. */ note?: string }> {
   const price = product.unitPriceCents / 100;
   const brand = product.brand ? norm(product.brand) : null;
   // The product type without the recalled brand's name, e.g. "Ceramic Space Heater with Remote".
@@ -131,25 +131,34 @@ export async function alternativesFor(
 
   return cached(`alt:${query}:${product.brand}:${product.model}:${Math.round(price)}`, async () => {
     let note: string | undefined;
-    const own = await ownProduct(product).catch((e) => {
+    let typeHits: Product[] | undefined;
+    const typeSearch = async () => (typeHits ??= await search({ query, limit: 24, filters }));
+
+    let seed: Product | undefined = await ownProduct(product).catch((e) => {
       note = `seed lookup failed: ${why(e)}`;
       return undefined;
     });
-    if (!own) {
-      note ??= product.model ? `${product.model} isn't named in any Channel3 listing` : "no model number to look up";
-    } else {
+    let seedKind: "recalled product" | "closest match" | undefined = seed ? "recalled product" : undefined;
+    if (!seed) {
+      // Not in Channel3 by model number: seed with the first product that is itself an acceptable alternative.
+      seed = (await typeSearch()).find((p) => usable([p]).length > 0);
+      if (seed) seedKind = "closest match";
+      else note ??= "no in-stock match to seed /v1/similar with";
+    }
+    if (seed) {
       try {
-        // The source product isn't documented as excluded, so `usable` drops the recalled model itself.
-        const brandIds = (own.brands ?? []).map((b) => b.id);
-        const found = await similar(own.id, { limit: 30, filters: { ...filters, ...(brandIds.length ? { exclude_brand_ids: brandIds } : {}) } });
+        // The source product isn't documented as excluded; `usable` drops the recalled model, and the recalled
+        // brand when we know its Channel3 id (only for the product's own listing).
+        const brandIds = seedKind === "recalled product" ? (seed.brands ?? []).map((b) => b.id) : [];
+        const found = await similar(seed.id, { limit: 30, filters: { ...filters, ...(brandIds.length ? { exclude_brand_ids: brandIds } : {}) } });
         const listings = usable(found);
-        if (listings.length > 0) return { listings, via: "similar" as const };
+        if (listings.length > 0) return { listings, via: "similar" as const, seed: seedKind };
         note = `/v1/similar returned ${found.length} product(s), none usable (other brand, in stock, with an image)`;
       } catch (e) {
         note = `/v1/similar failed: ${why(e)}`;
       }
     }
-    return { listings: usable(await search({ query, limit: 24, filters })), via: "search" as const, note };
+    return { listings: usable(await typeSearch()), via: "search" as const, note };
   });
 }
 
@@ -167,6 +176,7 @@ export async function marketCheck(product: Recalled) {
     onSale: onSale.status === "fulfilled" ? onSale.value : [],
     alternatives: alternatives.status === "fulfilled" ? alternatives.value.listings : [],
     alternativesVia: alternatives.status === "fulfilled" ? alternatives.value.via : undefined,
+    alternativesSeed: alternatives.status === "fulfilled" ? alternatives.value.seed : undefined,
     alternativesNote: alternatives.status === "fulfilled" ? alternatives.value.note : undefined,
     error: [onSale, alternatives].find((r) => r.status === "rejected")?.reason?.message as string | undefined,
   };

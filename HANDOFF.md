@@ -47,7 +47,7 @@ npm run build       # production build; must pass before pushing main
   - always ends the conversation on a user turn;
   - `coerceArgs` rebuilds the delegate arguments that Claude flattens.
 - A stale `.next` cache can serve old CSS after token changes: `rm -rf .next`.
-- Channel3 alternatives: `alternativesFor` seeds `POST /v1/similar` with the recalled product's own Channel3 record (found by model number) and falls back to a type search. The endpoint is `/v1/similar`; "similar-products" is only the docs page name. `/api/analytics/market` returns `alternativesFrom` (`similar` or `search`) so you can see which path a SKU took.
+- Channel3 alternatives: `alternativesFor` seeds `POST /v1/similar` with the recalled product's own Channel3 record (found by model number), else the closest in-stock match to its description, and falls back to a type search. The endpoint is `/v1/similar`; "similar-products" is only the docs page name. `/api/analytics/market` returns `alternativesFrom` (`similar` or `search`), `alternativesSeed` and `alternativesNote` (why it fell back), so you can see which path a SKU took.
 - Phone width: a 390px layout can't be tested by resizing Chrome (its minimum window is about 600px). Load the page in a same-origin 390px iframe instead. An `.sr-only` span outside a positioned ancestor inside an `overflow-x-auto` wrapper makes the whole page scroll sideways, which is why `NavLinks` is `relative`.
 - Studio's phone layout (`stackLayout` in `components/analytics/report.ts`) only applies in view mode, and only because `studioCanvasMinWidth` is lowered in `theme.ts`.
 - Payouts to the `@example.com` demo buyers stay **UNCLAIMED** ("Money in flight"). That's correct.
