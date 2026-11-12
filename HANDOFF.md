@@ -47,10 +47,13 @@ npm run build       # production build; must pass before pushing main
   - always ends the conversation on a user turn;
   - `coerceArgs` rebuilds the delegate arguments that Claude flattens.
 - A stale `.next` cache can serve old CSS after token changes: `rm -rf .next`.
+- Channel3 alternatives: `alternativesFor` seeds `POST /v1/similar` with the recalled product's own Channel3 record (found by model number) and falls back to a type search. The endpoint is `/v1/similar`; "similar-products" is only the docs page name. `/api/analytics/market` returns `alternativesFrom` (`similar` or `search`) so you can see which path a SKU took.
+- Phone width: a 390px layout can't be tested by resizing Chrome (its minimum window is about 600px). Load the page in a same-origin 390px iframe instead. An `.sr-only` span outside a positioned ancestor inside an `overflow-x-auto` wrapper makes the whole page scroll sideways, which is why `NavLinks` is `relative`.
+- Studio's phone layout (`stackLayout` in `components/analytics/report.ts`) only applies in view mode, and only because `studioCanvasMinWidth` is lowered in `theme.ts`.
 - Payouts to the `@example.com` demo buyers stay **UNCLAIMED** ("Money in flight"). That's correct.
 
 ## Open items (in order)
 
 1. Demo video (under 3 min, public on YouTube) and the Devpost submission. Ready-to-paste Devpost text and the video beat sheet are in `docs/devpost.md`.
-2. Optional, only if done by about 10:15 PT: switch buyer alternatives to Channel3 `/v1/similar-products`, with search as the fallback (`lib/channel3.ts`).
+2. **Sandbox balance is empty on the live demo.** The boot seed's first payout fails with `INSUFFICIENT_FUNDS`, so the Stomp Rocket recall shows 1 failed case and no money in flight. Top it up from a machine that has the keys, then restart the Render service (the disk is ephemeral, so a restart reseeds): `npx tsx --env-file-if-exists=.env.local scripts/fund-sandbox.ts 8 500`.
 3. After the deadline: seller auth, webhook registration on Render, Render Workflows (needs Postgres first), and Channel3 back-in-stock alerts for recalled models.

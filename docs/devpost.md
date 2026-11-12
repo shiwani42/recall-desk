@@ -10,7 +10,7 @@ Ready-to-paste submission text and the 3-minute video plan. Only claims that exi
 **Tools used** (for the "built with" or "Tools" field)
 - Claude Haiku 5.5 (Anthropic API)
 - AG Studio and the Studio Agent Framework
-- Channel3 product search API
+- Channel3 product search and similar-products APIs
 - PayPal JS SDK v6, PayPal Server SDK (Orders, Payments), PayPal Payouts, Transaction Search and Webhooks
 - Render
 - Next.js 16, SQLite / Drizzle, CPSC Recalls API
@@ -48,7 +48,7 @@ When a product is recalled, small online sellers often don't know who bought it.
   - Two dashboards over the ledger, joined by Studio's data engine.
   - A custom "Recall progress" widget with AI metadata, so agents can place it.
   - A theme wired to the app's CSS tokens, so it follows light and dark mode.
-- **Channel3's** search API answers two questions the seller's data can't: is the recalled model still on sale, and what can a refunded buyer buy instead.
+- **Channel3's** search and similar-products APIs answer two questions the seller's data can't: is the recalled model still on sale, and what can a refunded buyer buy instead.
 - **Render** hosts it from a `render.yaml` blueprint as a free web service with a health check. On boot it seeds fresh PayPal sandbox sales, so the public demo always has refundable data.
 
 ### Challenges we ran into
@@ -88,12 +88,13 @@ When a product is recalled, small online sellers often don't know who bought it.
 - `/analytics` is an AG Studio workspace over Recall Desk's PayPal sales and recall ledger. It has two pages, *Recall response* and *Sales exposure*, cross-filtered by recall.
 - We built a custom widget, *Recall progress* (`RecallProgressWidget.tsx`), with AI metadata so Studio's agents can place it.
 - We themed every Studio, grid and chart colour from the app's CSS tokens, so it follows light and dark mode.
+- On phones, a Studio responsive breakpoint stacks the dashboards into a single column (KPI tiles two to a row), so analytics is usable at 390px.
 - We ran the Studio Agent Framework on Claude Haiku 5.5 through our own adapter (`claude-adapter.ts`, unit-tested), since Studio ships none.
 - A custom "Recall analyst" agent with Recall Desk tools (`recall_exposure`, `refresh_paypal_status`, `market_check`, `create_page`) delegates widget and page building to Studio's built-in lead, planning, page and widget agents.
 
-**Channel3.** Recall Desk calls Channel3's product search API (`lib/channel3.ts`) for two recall questions a seller's own data can't answer.
+**Channel3.** Recall Desk calls Channel3's product search and similar-products APIs (`lib/channel3.ts`) for two recall questions a seller's own data can't answer.
 1. **Is the recalled product still on sale?** We search by brand and model, keep only listings whose own text contains the model number, and show the retailers still listing it in stock, with prices and a link to report it on SaferProducts.gov.
-2. **What can a refunded buyer buy instead?** We search the product type, filtered to in-stock items priced near the original, and exclude the recalled brand and model.
+2. **What can a refunded buyer buy instead?** When the recalled product itself is in Channel3's catalog, we seed `POST /v1/similar` with it and keep the in-stock results from other brands priced near the original. When it isn't (or that call fails), we search the product type with the same filters. Either way the recalled brand and model are excluded.
 
 The alternatives appear on the seller's recall page, on the buyer's private recall page next to their refund, and as the analytics agent's `market_check` tool.
 

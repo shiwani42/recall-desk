@@ -52,6 +52,7 @@ recalls and recall cases, joined by Studio's data engine (`components/analytics/
 Sellers can edit it, add widgets and pages, and save it (per browser). Polish beyond the stock components:
 
 - **Theme**: every Studio, grid and chart colour points at the app's CSS tokens (`components/analytics/theme.ts`), so it follows light and dark mode.
+- **Phone layout**: on a narrow canvas a Studio responsive breakpoint (`stackLayout` in `components/analytics/report.ts`, unit-tested) stacks the widgets in reading order, KPI tiles two to a row. It applies in view mode.
 - **Custom widget**: *Recall progress* (`RecallProgressWidget.tsx`) is the app's segmented status bar as a Studio widget. Map any status field and any
   measure (cases, exposure, refunded); it honours page filters and cross-filters and has AI metadata, so agents can place it.
 
@@ -77,12 +78,12 @@ Needs `AG_STUDIO` (licence key) and `ANTHROPIC_API_KEY`. Without the key the das
 
 ## Market check: Channel3
 
-[Channel3](https://trychannel3.com) has normalized product data from 25,000+ retailers. Recall Desk calls its search API (`lib/channel3.ts`) for two
+[Channel3](https://trychannel3.com) has normalized product data from 25,000+ retailers. Recall Desk calls its search and similar-products APIs (`lib/channel3.ts`) for two
 questions the seller's own data can't answer:
 
 - **Is the recalled product still on sale?** The recall page lists retailers that still show the recalled model in stock, with prices, and points to
   SaferProducts.gov for reporting it.
-- **What can a refunded buyer buy instead?** In-stock products of the same type from other brands, near the original price. Shown on the recall page,
+- **What can a refunded buyer buy instead?** In-stock products from other brands, near the original price. If the recalled product itself is in Channel3's catalog (its model number appears in a listing), they are the products Channel3 finds most similar to it (`POST /v1/similar`, seeded with that listing); otherwise a search by product type. Shown on the recall page,
   on the buyer's recall page next to their refund, and to the analytics agent (`market_check`).
 
 Needs `CHANNEL3_API_KEY`. Results are cached for 6 hours.
@@ -137,7 +138,7 @@ Buyers can choose any remedy the recall offers. The recommendation is the defaul
 - **SQLite** via **Drizzle ORM** + better-sqlite3. No DB server, and the file lives in `data/`. Schema: `lib/db/schema.ts`, migrations in `drizzle/` (applied automatically on startup)
 - **zod** validation on every Server Action, **vitest** tests
 - **AG Studio** (`ag-studio-react`) for analytics, with the Studio Agent Framework running on **Claude** (`@anthropic-ai/sdk`)
-- **Channel3** product search API for the market check
+- **Channel3** product search and similar-products APIs for the market check
 
 ```
 lib/
