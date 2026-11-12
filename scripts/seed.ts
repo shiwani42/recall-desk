@@ -5,10 +5,15 @@
 //   npm run db:seed -- --reset # wipe the local DB first
 import fs from "node:fs";
 import path from "node:path";
+import { eq } from "drizzle-orm";
 import { CATALOG } from "@/lib/catalog";
 import { getDb, t } from "@/lib/db";
 import { buildOrderRequest, describePayPalError, ordersController } from "@/lib/paypal/orders";
-import { recordSale, saleFromPayPalOrder } from "@/lib/sales";
+import { notifyBuyers } from "@/lib/recalls/notify";
+import { markShipped, resolveCase } from "@/lib/recalls/execute";
+import { createRecall, matchRecall } from "@/lib/recalls/service";
+import { syncRecall } from "@/lib/recalls/sync";
+import { recordSale, saleFromPayPalOrder, type SaleInput } from "@/lib/sales";
 
 const DAY = 864e5;
 const dbFile = process.env.DATABASE_PATH ?? path.join(process.cwd(), "data", "recall.db");
@@ -63,6 +68,26 @@ const LEGACY: { buyer: Buyer; items: [string, number][]; daysAgo: number }[] = [
   { buyer: B("Hannah", "Weiss", "8 Orchard Rd", "Buffalo", "NY", "14201"), items: [["DRE-HSH015", 1]], daysAgo: 210 },
 ];
 
+const TEST_CARDS = ["4111111111111111", "4012888888881881", "5555555555554444", "4032039317984658"];
+let nextCard = 0;
+
+async function captureWithAnyCard(body: ReturnType<typeof buildOrderRequest>, name: string) {
+  let lastErr: unknown;
+  for (let i = 0; i < TEST_CARDS.length; i++) {
+    const number = TEST_CARDS[(nextCard + i) % TEST_CARDS.length];
+    body.paymentSource = { card: { number, expiry: "2030-12", securityCode: "123", name } };
+    try {
+      const { result } = await ordersController().createOrder({ body, paypalRequestId: crypto.randomUUID(), prefer: "return=representation" });
+      nextCard = (nextCard + i + 1) % TEST_CARDS.length;
+      return result;
+    } catch (err) {
+      lastErr = err;
+      if (!describePayPalError(err).includes("PAYER_CANNOT_PAY")) throw err;
+    }
+  }
+  throw lastErr;
+}
+
 const lineItems = (items: [string, number][]) =>
   items.map(([sku, quantity]) => ({ sku, name: bySku[sku].name, description: bySku[sku].description, unitPriceCents: bySku[sku].unitPriceCents, quantity }));
 
@@ -75,15 +100,10 @@ for (const { buyer, items } of ORDERS) {
     name: { fullName: `${buyer.given} ${buyer.surname}` },
     address: { addressLine1: buyer.line1, adminArea2: buyer.city, adminArea1: buyer.state, postalCode: buyer.zip, countryCode: "US" },
   };
-  // Sandbox test Visa. Card + intent CAPTURE completes the payment in one call.
-  body.paymentSource = { card: { number: "4032039317984658", expiry: "2030-12", securityCode: "123", name: `${buyer.given} ${buyer.surname}` } };
-
+  // Sandbox test cards. Card + intent CAPTURE completes the payment in one call. PayPal's sandbox
+  // starts declining a card (PAYER_CANNOT_PAY) after heavy use, so rotate and fall back.
   try {
-    const { result } = await ordersController().createOrder({
-      body,
-      paypalRequestId: crypto.randomUUID(),
-      prefer: "return=representation",
-    });
+    const result = await captureWithAnyCard(body, `${buyer.given} ${buyer.surname}`);
     const sale = saleFromPayPalOrder(result, "seed");
     // Card payments don't return a PayPal account email; the storefront collected it at checkout.
     sale.buyerEmail ??= buyer.email;
@@ -110,7 +130,110 @@ for (const { buyer, items, daysAgo } of LEGACY) {
 }
 console.log(`✓ legacy sales: ${LEGACY.length}`);
 
+// Imported order history: the shop's earlier orders, from before it took PayPal through this app.
+// Synthetic and deterministic (same rows on every seed), with no PayPal capture, so any refund on
+// these goes out as a PayPal payout. It gives the analytics page months of history to work with.
+if (!process.argv.includes("--no-history")) {
+  const history = orderHistory();
+  for (const h of history) recordSale(db, h);
+  console.log(`✓ imported order history: ${history.length} orders`);
+
+  // A recall from two months ago, run through the real pipeline: matched to buyers, notices logged,
+  // and most buyers refunded with real sandbox payouts (the rest haven't replied yet).
+  const now = new Date();
+  const recall = createRecall(db, {
+    title: "Stomp Rocket Kids Kit: launcher cap can detach",
+    hazard: "The launcher's end cap can come off and is a choking hazard for young children.",
+    severity: "high",
+    instructions: "Take the kit away from children and stop using it.",
+    skus: ["TOY-RKT"],
+    remedies: ["refund", "replace"],
+    replacementStock: 20,
+    soldFrom: new Date(now.getTime() - 420 * DAY),
+    soldTo: new Date(now.getTime() - 60 * DAY),
+  }, new Date(now.getTime() - 58 * DAY));
+  const matched = matchRecall(db, recall.id);
+  await notifyBuyers(db, recall.id, process.env.APP_URL ?? process.env.RENDER_EXTERNAL_URL ?? "http://localhost:3000");
+  const cases = db.select({ id: t.recallCases.id }).from(t.recallCases).where(eq(t.recallCases.recallId, recall.id)).all();
+  // Of every 6 buyers: 3 took a refund, 2 asked for a replacement (one already shipped), 1 hasn't replied.
+  let paid = 0, replaced = 0;
+  for (const [i, c] of cases.entries()) {
+    const slot = i % 6;
+    if (slot === 5) continue;
+    let remedy: "refund" | "replace" = slot < 3 ? "refund" : "replace";
+    let r = await resolveCase(db, c.id, remedy, "buyer");
+    // Replacement stock ran out: the buyer takes a refund instead, as the buyer page would offer.
+    if (!r.ok && remedy === "replace") r = await resolveCase(db, c.id, (remedy = "refund"), "buyer");
+    if (!r.ok) {
+      console.error(`  ✗ case ${c.id}: ${r.error}`);
+      continue;
+    }
+    if (remedy === "refund") paid++;
+    else if (++replaced % 2 === 1) markShipped(db, c.id, `1Z${String(c.id).padStart(8, "0")}`);
+  }
+  await syncRecall(db, recall.id);
+  console.log(`✓ past recall ${recall.id}: ${matched.totalCases} cases, ${paid} refunded by sandbox payout, ${replaced} replacements`);
+}
+
 console.log(`DB: ${await db.$count(t.sales)} sales, ${await db.$count(t.saleItems)} line items`);
+}
+
+// Deterministic PRNG, so the history is identical on every machine and every Render boot.
+function rng(seed: number) {
+  return () => {
+    seed |= 0;
+    seed = (seed + 0x6d2b79f5) | 0;
+    let r = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    r = (r + Math.imul(r ^ (r >>> 7), 61 | r)) ^ r;
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function orderHistory() {
+  const rand = rng(20261112);
+  const pick = <T,>(xs: readonly T[]) => xs[Math.floor(rand() * xs.length)];
+  const weighted = <T,>(xs: readonly (readonly [T, number])[]) => {
+    let r = rand() * xs.reduce((s, [, w]) => s + w, 0);
+    for (const [x, w] of xs) if ((r -= w) <= 0) return x;
+    return xs[0][0];
+  };
+  const FIRST = ["Ava", "Ben", "Chloe", "Diego", "Ella", "Farah", "Gabe", "Hana", "Ivan", "Jade", "Kofi", "Lena", "Mateo", "Nora", "Omar", "Pia", "Quinn", "Rosa", "Sam", "Tara", "Uma", "Victor", "Wren", "Yusuf", "Zoe"];
+  const LAST = ["Adams", "Baker", "Cruz", "Diaz", "Evans", "Fischer", "Garcia", "Hughes", "Ito", "Jensen", "Kim", "Lewis", "Murphy", "Nguyen", "Ortiz", "Patel", "Reyes", "Silva", "Turner", "Walsh", "Young"];
+  const PLACES = [
+    ["Los Angeles", "CA", 14], ["San Diego", "CA", 6], ["Houston", "TX", 9], ["Dallas", "TX", 6], ["New York", "NY", 10], ["Brooklyn", "NY", 5],
+    ["Miami", "FL", 7], ["Orlando", "FL", 4], ["Chicago", "IL", 7], ["Philadelphia", "PA", 5], ["Columbus", "OH", 4], ["Atlanta", "GA", 5],
+    ["Charlotte", "NC", 4], ["Seattle", "WA", 5], ["Denver", "CO", 4], ["Phoenix", "AZ", 4], ["Boston", "MA", 4], ["Detroit", "MI", 3],
+    ["Minneapolis", "MN", 3], ["Portland", "OR", 3], ["Nashville", "TN", 3], ["Newark", "NJ", 3], ["Richmond", "VA", 2], ["Madison", "WI", 2],
+  ] as const;
+  const SKUS = [["CHG-65W", 30], ["BTL-750", 26], ["KTL-1L", 18], ["HTR-200", 14], ["TOY-RKT", 16], ["DRE-HSH015", 4]] as const;
+  // Heaters sell in winter, toys before the holidays.
+  const season = (sku: string, month: number) =>
+    sku === "HTR-200" || sku === "DRE-HSH015" ? (month >= 9 || month <= 1 ? 2.2 : 0.4) : sku === "TOY-RKT" && (month === 10 || month === 11) ? 2 : 1;
+
+  const out: SaleInput[] = [];
+  for (let i = 0; i < 280; i++) {
+    const daysAgo = 8 + Math.floor(rand() * 420);
+    const capturedAt = new Date(Date.now() - daysAgo * DAY - Math.floor(rand() * DAY));
+    const month = capturedAt.getUTCMonth();
+    const first = pick(FIRST), last = pick(LAST);
+    const [city, state] = weighted(PLACES.map(([c, s, w]) => [[c, s] as const, w] as const));
+    const lines = new Map<string, number>();
+    const count = rand() < 0.25 ? 2 : 1;
+    for (let k = 0; k < count; k++) {
+      const sku = weighted(SKUS.map(([s, w]) => [s, w * season(s, month)] as const));
+      lines.set(sku, (lines.get(sku) ?? 0) + (rand() < 0.15 ? 2 : 1));
+    }
+    out.push({
+      source: "legacy",
+      buyerName: `${first} ${last}`,
+      buyerEmail: `${first}.${last}.${i}@example.com`.toLowerCase(),
+      shipAddress: { name: `${first} ${last}`, line1: `${100 + Math.floor(rand() * 900)} ${pick(["Oak", "Main", "Park", "Lake", "Hill", "Maple"])} St`, city, state, postalCode: "00000", countryCode: "US" },
+      currency: "USD",
+      capturedAt,
+      items: [...lines].map(([sku, quantity]) => ({ sku, name: bySku[sku].name, quantity, unitPriceCents: bySku[sku].unitPriceCents })),
+    });
+  }
+  return out;
 }
 
 main().catch((err) => {
