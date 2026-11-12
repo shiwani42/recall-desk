@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "paypal:check": "node --env-file-if-exists=.env.local scripts/check-paypal.mjs",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:seed": "tsx --env-file-if-exists=.env.local scripts/seed.ts",
     "db:studio": "drizzle-kit studio",

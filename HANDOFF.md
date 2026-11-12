@@ -14,8 +14,8 @@ Read this, then `README.md` and `AGENTS.md`. Everything you need is in this repo
 ```bash
 git clone https://github.com/shiwani42/recall-desk && cd recall-desk
 npm ci
-npm test            # 63 tests, no network, no keys
-npm run lint && npx tsc --noEmit
+npm test            # no network, no keys
+npm run lint && npm run typecheck   # typecheck runs `next typegen` first: bare `tsc` fails on a fresh clone (no PageProps/LayoutProps yet)
 npm run build       # production build; must pass before pushing main
 ```
 
