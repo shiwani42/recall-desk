@@ -19,7 +19,10 @@ export default function NavLinks() {
 
 export function NavList({ path = "" }: { path?: string }) {
   return (
-    <nav className="flex gap-1 whitespace-nowrap rounded-full bg-surface-2 p-1 text-sm" aria-label="Main">
+    // `relative` matters on phones: this nav sits in a horizontally scrolling wrapper, and the Storefront
+    // link's .sr-only span is absolutely positioned. Without a positioned ancestor inside the wrapper it
+    // escapes the wrapper's clipping and makes the whole page scroll sideways (422px in a 390px viewport).
+    <nav className="relative flex gap-1 whitespace-nowrap rounded-full bg-surface-2 p-1 text-sm" aria-label="Main">
       {NAV.map((n) => {
         const active = n.match(path);
         return (
