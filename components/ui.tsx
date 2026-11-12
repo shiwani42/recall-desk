@@ -1,16 +1,21 @@
 import type { CaseStatus, Remedy, Severity } from "@/lib/db/schema";
 
+// Press feedback: a quick, subtle scale-down on :active (skipped under reduced motion and on
+// disabled buttons); colour and opacity changes ease over 150ms.
+export const press =
+  "transition-[scale,background-color,border-color,color,opacity] duration-150 ease-snappy motion-safe:not-disabled:active:scale-[0.97]";
+
 export const btn = {
   primary:
-    "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-accent px-3.5 py-2 text-sm font-medium text-on-accent hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed",
+    `inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-accent px-3.5 py-2 text-sm font-medium text-on-accent hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed ${press}`,
   secondary:
-    "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-line bg-surface px-3.5 py-2 text-sm font-medium hover:bg-background disabled:opacity-50 disabled:cursor-not-allowed",
+    `inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-line bg-surface px-3.5 py-2 text-sm font-medium hover:bg-background disabled:opacity-50 disabled:cursor-not-allowed ${press}`,
   small:
-    "inline-flex items-center justify-center rounded-md border border-line bg-surface px-2 py-1 text-xs font-medium hover:bg-background disabled:opacity-50 disabled:cursor-not-allowed",
+    `inline-flex items-center justify-center rounded-md border border-line bg-surface px-2 py-1 text-xs font-medium hover:bg-background disabled:opacity-50 disabled:cursor-not-allowed ${press}`,
 };
 
 export const input =
-  "w-full rounded-lg border border-line bg-surface px-3 py-2 text-base text-foreground outline-none focus:border-accent sm:text-sm focus:ring-2 focus:ring-accent/20";
+  "w-full rounded-lg border border-line bg-surface px-3 py-2 text-base text-foreground outline-none transition-[border-color,box-shadow] duration-150 focus:border-accent focus:ring-2 focus:ring-accent/20 sm:text-sm";
 
 const tone = {
   neutral: "bg-background text-muted border-line",

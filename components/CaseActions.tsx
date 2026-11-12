@@ -3,7 +3,7 @@
 import { Check, Link2, MoreHorizontal, Package, RotateCcw, Truck, Wrench } from "lucide-react";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { markShippedAction, resolveCaseAction } from "@/app/recall-actions";
-import { btn, input } from "@/components/ui";
+import { btn, input, press } from "@/components/ui";
 import type { CaseStatus, Remedy } from "@/lib/db/schema";
 
 const LABEL: Record<Remedy, string> = { refund: "Refund", replace: "Send replacement", repair: "Send repair kit" };
@@ -80,7 +80,7 @@ export default function CaseActions({
           <button
             ref={trigger}
             type="button"
-            className="grid h-10 w-10 place-items-center rounded-md text-muted transition-colors duration-150 hover:bg-background hover:text-foreground xl:h-8 xl:w-8"
+            className={`grid h-10 w-10 place-items-center rounded-md text-muted hover:bg-background hover:text-foreground aria-expanded:bg-background aria-expanded:text-foreground xl:h-8 xl:w-8 ${press}`}
             aria-label="More actions"
             aria-haspopup="menu"
             aria-expanded={open}
@@ -100,12 +100,12 @@ export default function CaseActions({
                 const i = items.indexOf(document.activeElement as HTMLElement);
                 items[(i + (e.key === "ArrowDown" ? 1 : -1) + items.length) % items.length]?.focus();
               }}
-              className="absolute right-0 top-full z-20 mt-1 w-52 rounded-lg border border-line bg-surface p-1 text-sm shadow-lg">
+              className="absolute right-0 top-full z-20 mt-1 w-52 origin-top-right rounded-lg border border-line bg-surface p-1 text-sm shadow-lg motion-safe:animate-pop-in">
               {!done && !awaitingShipment &&
                 others.map((r) => {
                   const Icon = ICON[r];
                   return (
-                    <button key={r} type="button" role="menuitem" className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left hover:bg-background focus-visible:bg-background focus-visible:outline-none" onClick={() => run(r)}>
+                    <button key={r} type="button" role="menuitem" className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left transition-colors duration-150 hover:bg-background focus-visible:bg-background focus-visible:outline-none" onClick={() => run(r)}>
                       <Icon size={14} aria-hidden /> {r === "refund" ? `Refund ${amount} instead` : `${LABEL[r]} instead`}
                     </button>
                   );
@@ -113,7 +113,7 @@ export default function CaseActions({
               <button
                 type="button"
                 role="menuitem"
-                className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left hover:bg-background focus-visible:bg-background focus-visible:outline-none"
+                className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left transition-colors duration-150 hover:bg-background focus-visible:bg-background focus-visible:outline-none"
                 onClick={async () => {
                   setOpen(false);
                   trigger.current?.focus();

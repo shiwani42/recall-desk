@@ -43,7 +43,7 @@ async function RecallContent({ params }: { params: PageProps<"/recalls/[id]">["p
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/" className="text-sm text-muted hover:text-foreground">← Recalls</Link>
+        <Link href="/" className="text-sm text-muted transition-colors duration-150 hover:text-foreground">← Recalls</Link>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <span className="font-mono text-xs text-muted">{recall.id}</span>
           <Badge tone={SEVERITY[recall.severity].tone}>{SEVERITY[recall.severity].label}</Badge>

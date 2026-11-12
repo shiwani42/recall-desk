@@ -1,5 +1,6 @@
 "use client";
 
+import { Loader2 } from "lucide-react";
 import { useState, useTransition } from "react";
 import { buyerChooseAction } from "@/app/recall-actions";
 import { btn } from "@/components/ui";
@@ -31,7 +32,7 @@ export default function RemedyChooser({ token, options, recommended }: { token: 
       {options.map((o) => (
         <label
           key={o.remedy}
-          className={`flex gap-3 rounded-xl border p-4 ${o.disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"} border-line has-[:checked]:border-accent has-[:checked]:bg-accent-soft has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent/40`}
+          className={`flex gap-3 rounded-xl border p-4 transition-[scale,background-color,border-color,box-shadow] duration-200 ease-snappy ${o.disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:border-muted/50 hover:bg-background motion-safe:active:scale-[0.99]"} border-line has-[:checked]:border-accent has-[:checked]:bg-accent-soft has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent/40`}
         >
           <input
             type="radio"
@@ -56,6 +57,7 @@ export default function RemedyChooser({ token, options, recommended }: { token: 
       </fieldset>
       {error && <p role="alert" className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger">{error}</p>}
       <button type="submit" disabled={!choice || pending} className={`${btn.primary} w-full py-2.5`}>
+        {pending && <Loader2 size={16} aria-hidden className="motion-safe:animate-spin" />}
         {pending ? "Processing…" : "Confirm my choice"}
       </button>
     </form>

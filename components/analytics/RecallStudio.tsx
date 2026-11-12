@@ -22,6 +22,7 @@ import { buildAi } from "./ai";
 import { buildStudioData } from "./data";
 import RecallProgressWidget from "./RecallProgressWidget";
 import { PAGES, PROGRESS_WIDGET, defaultReport } from "./report";
+import { press } from "@/components/ui";
 import { recallStudioTheme } from "./theme";
 
 if (process.env.NODE_ENV !== "production") enableStudioDevValidations();
@@ -188,16 +189,18 @@ function Workspace({ data, licenseKey, aiEnabled }: Props) {
             <button
               type="button"
               onClick={askAnalyst}
-              className="flex items-center gap-1.5 rounded-md border border-line px-2.5 py-1.5 transition-colors duration-150 hover:bg-background"
+              className={`flex items-center gap-1.5 rounded-md border border-line px-2.5 py-1.5 hover:bg-background ${press}`}
             >
               <Sparkles size={14} aria-hidden className="text-accent" /> Ask the analyst
             </button>
           )}
-          <span aria-live="polite" className="text-xs text-muted">{savedAt && `Saved ${savedAt}`}</span>
+          <span aria-live="polite" className="text-xs text-muted">
+            {savedAt && <span key={savedAt} className="inline-block motion-safe:animate-pop-in">Saved {savedAt}</span>}
+          </span>
           <button
             type="button"
             onClick={() => setMode(mode === "edit" ? "view" : "edit")}
-            className="flex items-center gap-1.5 rounded-md border border-line px-2.5 py-1.5 transition-colors duration-150 hover:bg-background"
+            className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 ${press} ${mode === "edit" ? "border-accent bg-accent-soft text-accent" : "border-line hover:bg-background"}`}
             aria-pressed={mode === "edit"}
           >
             <Pencil size={14} aria-hidden /> {mode === "edit" ? "Done editing" : "Edit"}
@@ -205,7 +208,7 @@ function Workspace({ data, licenseKey, aiEnabled }: Props) {
           <button
             type="button"
             onClick={save}
-            className="flex items-center gap-1.5 rounded-md bg-accent px-2.5 py-1.5 font-medium text-on-accent transition-opacity duration-150 hover:opacity-90"
+            className={`flex items-center gap-1.5 rounded-md bg-accent px-2.5 py-1.5 font-medium text-on-accent hover:opacity-90 ${press}`}
           >
             <Save size={14} aria-hidden /> Save
           </button>
@@ -214,7 +217,7 @@ function Workspace({ data, licenseKey, aiEnabled }: Props) {
             onClick={reset}
             title="Back to the default report"
             aria-label="Reset to the default report"
-            className="grid h-8 w-8 place-items-center rounded-md text-muted transition-colors duration-150 hover:bg-background hover:text-foreground"
+            className={`grid h-8 w-8 place-items-center rounded-md text-muted hover:bg-background hover:text-foreground ${press}`}
           >
             <RotateCcw size={15} aria-hidden />
           </button>

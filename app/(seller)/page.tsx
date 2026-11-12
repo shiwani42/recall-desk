@@ -62,7 +62,7 @@ async function DashboardContent() {
       ) : (
         <Card className="divide-y divide-line">
           {recalls.map(({ recall, skus, cases, units, notified, resolved, failed, processing, shipping, waiting, identified }) => (
-            <Link key={recall.id} href={`/recalls/${recall.id}`} className="grid gap-3 p-4 hover:bg-background md:grid-cols-[1fr_220px] md:items-center">
+            <Link key={recall.id} href={`/recalls/${recall.id}`} className="grid gap-3 p-4 transition-colors duration-150 hover:bg-background md:grid-cols-[1fr_220px] md:items-center">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-mono text-xs text-muted">{recall.id}</span>
@@ -95,7 +95,7 @@ async function WatchBanner() {
   if (hits.length === 0) return null;
   const units = hits.reduce((s, h) => s + h.matches.reduce((u, m) => u + m.units, 0), 0);
   return (
-    <Link href="/recalls/new" className="flex flex-wrap items-center gap-3 rounded-xl border border-danger/30 bg-danger-soft p-4 hover:opacity-90">
+    <Link href="/recalls/new" className="flex flex-wrap items-center gap-3 rounded-xl border border-danger/30 bg-danger-soft p-4 transition-opacity duration-150 hover:opacity-90">
       <span className="grid h-8 w-8 place-items-center rounded-full bg-danger text-sm font-bold text-on-danger" aria-hidden>!</span>
       <span className="min-w-0 flex-1">
         <span className="block font-semibold text-danger">
