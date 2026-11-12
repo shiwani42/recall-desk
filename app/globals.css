@@ -1,6 +1,8 @@
 @import "tailwindcss";
 
 :root {
+  /* Native controls, scrollbars and date pickers follow the OS theme like the tokens do. */
+  color-scheme: light dark;
   --background: #f7f7f8;
   --surface: #ffffff;
   --foreground: #18181b;
@@ -14,6 +16,10 @@
   --warn-soft: #fff4e0;
   --ok: #157a3d;
   --ok-soft: #e6f6ec;
+  /* Text on solid accent / danger fills (buttons, badges). White in light mode;
+     dark ink in dark mode, where the lighter accent fails AA with white (2.7:1). */
+  --on-accent: #ffffff;
+  --on-danger: #ffffff;
   /* Case-status fills (validated: dataviz validate_palette, light surface) */
   --st-resolved: #1f9d55;
   --st-flight: #0b5fd6;
@@ -38,6 +44,8 @@
     --warn-soft: #33260f;
     --ok: #4cd483;
     --ok-soft: #10301d;
+    --on-accent: #0d0d10;
+    --on-danger: #0d0d10;
     /* validated against the dark surface */
     --st-resolved: #24924f;
     --st-flight: #3576d6;
@@ -62,6 +70,8 @@
   --color-warn-soft: var(--warn-soft);
   --color-ok: var(--ok);
   --color-ok-soft: var(--ok-soft);
+  --color-on-accent: var(--on-accent);
+  --color-on-danger: var(--on-danger);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -69,4 +79,20 @@
 body {
   background: var(--background);
   color: var(--foreground);
+}
+
+@layer base {
+  /* One visible keyboard focus ring everywhere (low specificity, so components and
+     AG Studio can still style their own). Mouse clicks don't show it. */
+  :where(a, button, summary, select, [tabindex], input[type="checkbox"], input[type="radio"]):focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  /* No double-tap-zoom delay on controls. */
+  :where(a, button, label, input, select, textarea, summary) {
+    touch-action: manipulation;
+  }
+  h1, h2 {
+    text-wrap: balance;
+  }
 }

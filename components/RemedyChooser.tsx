@@ -26,10 +26,12 @@ export default function RemedyChooser({ token, options, recommended }: { token: 
         });
       }}
     >
+      <fieldset className="space-y-3">
+      <legend className="sr-only">Choose your remedy</legend>
       {options.map((o) => (
         <label
           key={o.remedy}
-          className={`flex gap-3 rounded-xl border p-4 ${o.disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"} border-line has-[:checked]:border-accent has-[:checked]:bg-accent-soft`}
+          className={`flex gap-3 rounded-xl border p-4 ${o.disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"} border-line has-[:checked]:border-accent has-[:checked]:bg-accent-soft has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent/40`}
         >
           <input
             type="radio"
@@ -38,19 +40,20 @@ export default function RemedyChooser({ token, options, recommended }: { token: 
             disabled={Boolean(o.disabled) || pending}
             checked={choice === o.remedy}
             onChange={() => setChoice(o.remedy)}
-            className="mt-1 accent-[var(--accent)]"
+            className="mt-1 accent-[var(--accent)] focus-visible:outline-none"
           />
           <span>
             <span className="flex items-center gap-2 font-medium">
               {o.title}
               {o.remedy === recommended && !o.disabled && (
-                <span className="rounded-full bg-accent px-2 py-0.5 text-[11px] font-medium text-white">Recommended</span>
+                <span className="rounded-full bg-accent px-2 py-0.5 text-[11px] font-medium text-on-accent">Recommended</span>
               )}
             </span>
             <span className="block text-sm text-muted">{o.disabled ?? o.detail}</span>
           </span>
         </label>
       ))}
+      </fieldset>
       {error && <p role="alert" className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger">{error}</p>}
       <button type="submit" disabled={!choice || pending} className={`${btn.primary} w-full py-2.5`}>
         {pending ? "Processing…" : "Confirm my choice"}

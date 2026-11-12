@@ -14,7 +14,7 @@ export default function ImportButton() {
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-2">
-        <select value={days} onChange={(e) => setDays(Number(e.target.value))} className={`${input} !w-auto`} disabled={pending}>
+        <select aria-label="How far back to import" value={days} onChange={(e) => setDays(Number(e.target.value))} className={`${input} !w-auto`} disabled={pending}>
           <option value={31}>Last 31 days</option>
           <option value={90}>Last 90 days</option>
           <option value={365}>Last year</option>

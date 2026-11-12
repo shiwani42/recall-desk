@@ -96,7 +96,7 @@ async function WatchBanner() {
   const units = hits.reduce((s, h) => s + h.matches.reduce((u, m) => u + m.units, 0), 0);
   return (
     <Link href="/recalls/new" className="flex flex-wrap items-center gap-3 rounded-xl border border-danger/30 bg-danger-soft p-4 hover:opacity-90">
-      <span className="grid h-8 w-8 place-items-center rounded-full bg-danger text-sm font-bold text-white">!</span>
+      <span className="grid h-8 w-8 place-items-center rounded-full bg-danger text-sm font-bold text-on-danger" aria-hidden>!</span>
       <span className="min-w-0 flex-1">
         <span className="block font-semibold text-danger">
           {hits.length} government recall{hits.length === 1 ? "" : "s"} may affect products you sold

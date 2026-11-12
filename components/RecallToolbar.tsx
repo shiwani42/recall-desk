@@ -80,8 +80,10 @@ export default function RecallToolbar({ recallId, toNotify, refundsPending, inFl
           Sync {inFlight} with PayPal
         </button>}
       </div>
-      {pending && <p className="text-sm text-muted">Working… (refunds go through PayPal one by one)</p>}
-      {msg && <p role="status" className={`text-sm ${msg.error ? "text-danger" : "text-ok"}`}>{msg.text}</p>}
+      <div aria-live="polite">
+        {pending && <p className="text-sm text-muted">Working… (refunds go through PayPal one by one)</p>}
+        {msg && <p className={`text-sm ${msg.error ? "text-danger" : "text-ok"}`}>{msg.text}</p>}
+      </div>
     </div>
   );
 }

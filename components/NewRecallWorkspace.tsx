@@ -19,7 +19,8 @@ export default function NewRecallWorkspace({
 
   const use = (d: Draft) => {
     setDraft(d);
-    requestAnimationFrame(() => document.getElementById("recall-form")?.scrollIntoView({ behavior: "smooth" }));
+    const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    requestAnimationFrame(() => document.getElementById("recall-form")?.scrollIntoView({ behavior: smooth ? "smooth" : "auto" }));
   };
 
   return (
@@ -32,7 +33,7 @@ export default function NewRecallWorkspace({
           </div>
           <div className="flex rounded-lg border border-line p-0.5 text-sm">
             {([["watch", `Recall watch${watch.length ? ` (${watch.length})` : ""}`], ["search", "Search CPSC"], ["paste", "Paste a notice"]] as const).map(([k, label]) => (
-              <button key={k} onClick={() => setTab(k)} className={`rounded-md px-3 py-1.5 ${tab === k ? "bg-accent text-white" : "text-muted hover:text-foreground"}`}>
+              <button key={k} type="button" aria-pressed={tab === k} onClick={() => setTab(k)} className={`rounded-md px-3 py-1.5 transition-colors duration-150 ${tab === k ? "bg-accent text-on-accent" : "text-muted hover:text-foreground"}`}>
                 {label}
               </button>
             ))}
@@ -93,7 +94,7 @@ function NoticeRow({ hit: { notice, matches }, onUse }: { hit: Hit; onUse: () =>
           <p className="mt-1 text-xs text-muted">No catalog match. You can still pick SKUs manually.</p>
         )}
       </div>
-      <button className={btn.secondary} onClick={onUse}>Use this notice</button>
+      <button type="button" className={btn.secondary} onClick={onUse}>Use this notice</button>
     </div>
   );
 }
@@ -105,10 +106,10 @@ function CpscSearch({ onUse }: { onUse: (d: Draft) => void }) {
   return (
     <div className="space-y-3">
       <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); start(async () => setRes(await searchCpscAction(q))); }}>
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="e.g. space heater, DREO, charger" className={input} />
+        <input type="search" aria-label="Search CPSC recalls" autoComplete="off" value={q} onChange={(e) => setQ(e.target.value)} placeholder="e.g. space heater, DREO, charger…" className={input} />
         <button className={btn.primary} disabled={pending || q.trim().length < 2}>{pending ? "Searching…" : "Search"}</button>
       </form>
-      {res && !res.ok && <p className="text-sm text-danger">{res.error}</p>}
+      {res && !res.ok && <p role="alert" className="text-sm text-danger">{res.error}</p>}
       {res?.ok && res.results.length === 0 && <p className="text-sm text-muted">No CPSC recalls found.</p>}
       {res?.ok && res.results.map((r) => <NoticeRow key={r.notice.id} hit={r} onUse={() => onUse(draftFromCpsc(r.notice, r.matches))} />)}
     </div>
@@ -123,6 +124,7 @@ function PasteNotice({ aiOn, onUse }: { aiOn: boolean; onUse: (d: Draft) => void
     <div className="space-y-2">
       <textarea
         rows={6}
+        aria-label="Recall notice text"
         value={text}
         onChange={(e) => setText(e.target.value)}
         disabled={!aiOn}
@@ -134,8 +136,9 @@ function PasteNotice({ aiOn, onUse }: { aiOn: boolean; onUse: (d: Draft) => void
           AI drafting is off. Add <code className="font-mono">ANTHROPIC_API_KEY</code> to <code className="font-mono">.env.local</code> and restart to have Claude read notices and match them to your SKUs.
         </p>
       )}
-      {error && <p className="text-sm text-danger">{error}</p>}
+      {error && <p role="alert" className="text-sm text-danger">{error}</p>}
       <button
+        type="button"
         className={btn.primary}
         disabled={!aiOn || pending || text.trim().length < 40}
         onClick={() =>

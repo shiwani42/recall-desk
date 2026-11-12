@@ -104,7 +104,7 @@ type Props = { data: AnalyticsData; licenseKey?: string; aiEnabled: boolean };
 export default function RecallStudio(props: Props) {
   // Saved reports live in localStorage, so Studio renders in the browser only.
   const inBrowser = useSyncExternalStore(noSubscription, () => true, () => false);
-  return inBrowser ? <Workspace {...props} /> : <div className="h-full animate-pulse rounded-lg bg-surface" />;
+  return inBrowser ? <Workspace {...props} /> : <div className="h-full rounded-lg bg-surface motion-safe:animate-pulse" />;
 }
 
 function Workspace({ data, licenseKey, aiEnabled }: Props) {
@@ -151,6 +151,7 @@ function Workspace({ data, licenseKey, aiEnabled }: Props) {
   const reset = () => {
     const api = apiRef.current;
     if (!api) return;
+    if (!confirm("Reset to the default report? Pages and changes you saved in this browser will be removed.")) return;
     try {
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(NAMES_KEY);
@@ -192,7 +193,7 @@ function Workspace({ data, licenseKey, aiEnabled }: Props) {
               <Sparkles size={14} aria-hidden className="text-accent" /> Ask the analyst
             </button>
           )}
-          {savedAt && <span className="text-xs text-muted">Saved {savedAt}</span>}
+          <span aria-live="polite" className="text-xs text-muted">{savedAt && `Saved ${savedAt}`}</span>
           <button
             type="button"
             onClick={() => setMode(mode === "edit" ? "view" : "edit")}
@@ -204,7 +205,7 @@ function Workspace({ data, licenseKey, aiEnabled }: Props) {
           <button
             type="button"
             onClick={save}
-            className="flex items-center gap-1.5 rounded-md bg-accent px-2.5 py-1.5 font-medium text-white transition-opacity duration-150 hover:opacity-90"
+            className="flex items-center gap-1.5 rounded-md bg-accent px-2.5 py-1.5 font-medium text-on-accent transition-opacity duration-150 hover:opacity-90"
           >
             <Save size={14} aria-hidden /> Save
           </button>
@@ -213,7 +214,7 @@ function Workspace({ data, licenseKey, aiEnabled }: Props) {
             onClick={reset}
             title="Back to the default report"
             aria-label="Reset to the default report"
-            className="rounded-md p-1.5 text-muted transition-colors duration-150 hover:bg-background hover:text-foreground"
+            className="grid h-8 w-8 place-items-center rounded-md text-muted transition-colors duration-150 hover:bg-background hover:text-foreground"
           >
             <RotateCcw size={15} aria-hidden />
           </button>

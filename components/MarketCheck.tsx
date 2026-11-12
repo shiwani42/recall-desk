@@ -2,6 +2,7 @@ import { inArray } from "drizzle-orm";
 import { AlertTriangle, CheckCircle2, ExternalLink } from "lucide-react";
 import { Card } from "@/components/ui";
 import { channel3Enabled, marketCheck, type Listing } from "@/lib/channel3";
+import { formatMoney, toCents } from "@/lib/money";
 import { getDb, t } from "@/lib/db";
 
 // Server component: what the wider market says about a recalled product, via Channel3.
@@ -40,7 +41,7 @@ export default async function MarketCheck({ skus }: { skus: string[] }) {
                               <a href={o.url} target="_blank" rel="noreferrer" className="truncate hover:underline">
                                 {o.domain} <span className="text-muted">· {l.title}</span>
                               </a>
-                              <span className="shrink-0 tabular-nums text-muted">${o.price.toFixed(2)}</span>
+                              <span className="shrink-0 tabular-nums text-muted">{formatMoney(toCents(o.price))}</span>
                             </li>
                           )),
                         )}
@@ -62,7 +63,7 @@ export default async function MarketCheck({ skus }: { skus: string[] }) {
                 {r.alternatives.length > 0 && (
                   <div>
                     <p className="text-sm font-medium">Safe alternatives to suggest to refunded buyers</p>
-                    <p className="text-xs text-muted">Same kind of product, other brands, in stock near ${(p.unitPriceCents / 100).toFixed(2)}. Also shown on the buyer&apos;s recall page.</p>
+                    <p className="text-xs text-muted">Same kind of product, other brands, in stock near {formatMoney(p.unitPriceCents)}. Also shown on the buyer&apos;s recall page.</p>
                     <Alternatives items={r.alternatives} />
                   </div>
                 )}
@@ -97,7 +98,8 @@ export function Alternatives({ items }: { items: Listing[] }) {
                 {l.retailers[0].domain}
               </span>
               <span className="flex items-center gap-1 tabular-nums text-foreground">
-                ${l.retailers[0].price.toFixed(2)} <ExternalLink size={12} aria-hidden />
+                {formatMoney(toCents(l.retailers[0].price))} <ExternalLink size={12} aria-hidden />
+                <span className="sr-only">(opens in a new tab)</span>
               </span>
             </span>
           </a>

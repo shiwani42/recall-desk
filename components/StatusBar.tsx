@@ -38,7 +38,7 @@ export default function StatusBar({ counts, variant = "thin" }: { counts: Status
               key={p.status}
               tabIndex={tall ? 0 : -1}
               aria-label={tip}
-              className={`group relative min-w-[6px] outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 ${tall ? "rounded-[4px]" : ""}`}
+              className={`group relative min-w-[6px] outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-surface ${tall ? "rounded-[4px]" : ""}`}
               style={{ flexGrow: n, flexBasis: 0, background: p.fill }}
             >
               {tall && pct(n) >= 9 && (

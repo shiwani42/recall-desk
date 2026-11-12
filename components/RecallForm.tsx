@@ -22,7 +22,7 @@ export default function RecallForm({ skus, initial, suggestions = {} }: { skus: 
   const fresh = !state?.values && !initial;
 
   return (
-    <form action={action} className="space-y-6">
+    <form action={action} autoComplete="off" className="space-y-6">
       <fieldset className="space-y-2">
         <legend className="text-sm font-medium">Affected SKUs</legend>
         <p className="text-xs text-muted">Units sold and buyers come from your PayPal sales ledger.</p>
@@ -94,7 +94,7 @@ export default function RecallForm({ skus, initial, suggestions = {} }: { skus: 
       </div>
 
       <Field label="Official notice URL" hint="Optional, e.g. the CPSC or manufacturer recall page">
-        <input name="sourceUrl" type="url" className={input} defaultValue={(v.sourceUrl as string) ?? ""} placeholder="https://www.cpsc.gov/Recalls/..." />
+        <input name="sourceUrl" type="url" className={input} defaultValue={(v.sourceUrl as string) ?? ""} placeholder="https://www.cpsc.gov/Recalls/…" />
       </Field>
 
       {state?.error && <p role="alert" className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger">{state.error}</p>}

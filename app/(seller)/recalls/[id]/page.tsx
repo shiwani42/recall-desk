@@ -136,7 +136,7 @@ async function RecallContent({ params }: { params: PageProps<"/recalls/[id]">["p
                 <th className="p-3 text-right font-medium">Amount</th>
                 <th className="p-3 font-medium">Recommended fix</th>
                 <th className="p-3 font-medium">Status</th>
-                <th className="p-3" />
+                <th className="p-3"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line">

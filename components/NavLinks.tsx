@@ -35,6 +35,7 @@ export function NavList({ path = "" }: { path?: string }) {
       })}
       <Link href="/store" target="_blank" className="flex items-center gap-1 rounded-md px-2.5 py-1.5 text-muted transition-colors duration-150 hover:bg-background hover:text-foreground">
         Storefront <ExternalLink size={13} aria-hidden />
+        <span className="sr-only">(opens in a new tab)</span>
       </Link>
     </nav>
   );

@@ -112,7 +112,7 @@ function Resolved({ remedy, status, amount, rail, shipTo, note }: { remedy: Reme
         : `Your ${remedy === "replace" ? "replacement" : "repair kit"} will ship to ${shipTo}. We'll email tracking when it's on the way.`;
   return (
     <div className="text-center">
-      <p className="mx-auto grid h-10 w-10 place-items-center rounded-full bg-ok-soft text-lg text-ok">✓</p>
+      <p aria-hidden className="mx-auto grid h-10 w-10 place-items-center rounded-full bg-ok-soft text-lg text-ok">✓</p>
       <p className="mt-2 font-semibold">You&apos;re all set</p>
       <p className="mt-1 text-sm text-muted">{text}</p>
     </div>
