@@ -3,7 +3,10 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import RemedyChooser, { type RemedyOption } from "@/components/RemedyChooser";
 import { Skeleton, fmtDate } from "@/components/ui";
-import { getDb } from "@/lib/db";
+import { eq } from "drizzle-orm";
+import { Alternatives } from "@/components/MarketCheck";
+import { channel3Enabled, safeAlternatives } from "@/lib/channel3";
+import { getDb, t } from "@/lib/db";
 import type { Remedy, ShipAddress } from "@/lib/db/schema";
 import { formatMoney } from "@/lib/money";
 import { caseByToken } from "@/lib/recalls/queries";
@@ -84,6 +87,11 @@ async function BuyerContent({ params }: { params: PageProps<"/r/[token]">["param
           </>
         )}
       </div>
+      {(c.chosenRemedy ?? c.recommendedRemedy) === "refund" && (
+        <Suspense fallback={null}>
+          <BuyerAlternatives sku={item.sku} />
+        </Suspense>
+      )}
       <p className="text-center text-xs text-muted">Sent because this purchase was made with PayPal. Questions? Reply to the recall email.</p>
     </div>
   );
@@ -107,6 +115,22 @@ function Resolved({ remedy, status, amount, rail, shipTo, note }: { remedy: Reme
       <p className="mx-auto grid h-10 w-10 place-items-center rounded-full bg-ok-soft text-lg text-ok">✓</p>
       <p className="mt-2 font-semibold">You&apos;re all set</p>
       <p className="mt-1 text-sm text-muted">{text}</p>
+    </div>
+  );
+}
+
+// Channel3: comparable products from other brands, in stock now, for buyers taking a refund.
+async function BuyerAlternatives({ sku }: { sku: string }) {
+  if (!channel3Enabled()) return null;
+  const product = getDb().select().from(t.products).where(eq(t.products.sku, sku)).get();
+  if (!product) return null;
+  const items = await safeAlternatives(product).catch(() => []);
+  if (items.length === 0) return null;
+  return (
+    <div className="rounded-xl border border-line bg-surface p-5">
+      <h2 className="font-semibold">Need a replacement now?</h2>
+      <p className="text-sm text-muted">Similar products from other brands, in stock at these stores today.</p>
+      <Alternatives items={items} />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import CaseActions from "@/components/CaseActions";
+import MarketCheck from "@/components/MarketCheck";
 import RecallToolbar from "@/components/RecallToolbar";
 import StatusBar, { type StatusCounts } from "@/components/StatusBar";
 import { Badge, Card, REMEDY_LABEL, SEVERITY, STATUS, Skeleton, Stat, fmtDate } from "@/components/ui";
@@ -84,6 +85,10 @@ async function RecallContent({ params }: { params: PageProps<"/recalls/[id]">["p
           />
         </Card>
       )}
+
+      <Suspense fallback={null}>
+        <MarketCheck skus={skus} />
+      </Suspense>
 
       <RecallToolbar recallId={recall.id} toNotify={toNotify} refundsPending={refundsPending} inFlight={cases.filter((r) => r.c.status === "processing").length} />
 

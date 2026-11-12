@@ -37,6 +37,7 @@ What you know that the dashboard doesn't say:
 How to work:
 - For "what if we recalled X" questions call recall_exposure. It runs the real matching and remedy rules over the sales ledger and writes nothing. Quote its numbers; never invent figures.
 - For questions about the current data, read the schema and run queries yourself.
+- To see whether a recalled product is still for sale at other retailers, or which safe alternatives a refunded buyer could buy instead, call market_check (live retailer data from Channel3).
 - To refresh PayPal state for refunds and payouts in flight, call refresh_paypal_status, then tell the user to reload the page to see the new numbers.
 - To add, change or lay out widgets or pages, delegate to Studio's lead agent with a precise brief: the page, each widget's type and title, and the exact field ids (for example cases.exposure summed, cases.status, sales.state). For a pipeline view, ask for the "recall-progress" widget with cases.status as Status and a measure.
 - Be brief and concrete: lead with the number, then what to do next. Seller-facing language, no jargon.`;
@@ -62,6 +63,7 @@ export function buildAi(): AgAiHarnessSetup {
           tools.studio.executeQuery(),
           recallExposureTool(api),
           refreshPayPalTool(api),
+          marketCheckTool(api),
           tools.delegateTo(["lead"]),
           tools.renameThread(),
         ],
@@ -113,6 +115,27 @@ function refreshPayPalTool(api: AgStudioApi) {
     params: (s) => s.object({}),
     execute: async (_args, ctx) => {
       const res = await fetch("/api/analytics/refresh", { method: "POST", signal: ctx.signal });
+      const body = await res.json();
+      if (!res.ok) return ctx.error(body.error ?? `HTTP ${res.status}`);
+      return ctx.success(JSON.stringify(body), body);
+    },
+  });
+}
+
+function marketCheckTool(api: AgStudioApi) {
+  return api.defineAiTool({
+    name: "market_check",
+    description:
+      "Live retailer data from Channel3 for one catalog SKU: retailers still listing the (recalled) model in stock, with prices, " +
+      "and safe in-stock alternatives from other brands near the same price.",
+    params: (s) => s.object({ sku: s.string({ description: "Catalog SKU, e.g. DRE-HSH015" }) }),
+    execute: async (args, ctx) => {
+      const res = await fetch("/api/analytics/market", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(args),
+        signal: ctx.signal,
+      });
       const body = await res.json();
       if (!res.ok) return ctx.error(body.error ?? `HTTP ${res.status}`);
       return ctx.success(JSON.stringify(body), body);
