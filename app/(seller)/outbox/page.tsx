@@ -1,6 +1,7 @@
 import { desc } from "drizzle-orm";
 import { connection } from "next/server";
 import { Suspense } from "react";
+import Linkified from "@/components/Linkified";
 import RetryOutbox from "@/components/RetryOutbox";
 import { Badge, Card, Skeleton, type Tone } from "@/components/ui";
 import { getDb, t } from "@/lib/db";
@@ -65,7 +66,9 @@ async function Messages() {
               <div className="border-t border-line p-4 text-sm">
                 {m.deliveredTo && m.deliveredTo !== m.to && <p className="mb-2 text-xs text-muted">Delivered to {m.deliveredTo} (redirect)</p>}
                 {m.error && <p className="mb-2 rounded bg-danger-soft px-2 py-1 text-xs text-danger">{m.error}</p>}
-                <pre className="whitespace-pre-wrap font-sans">{m.body}</pre>
+                <pre className="whitespace-pre-wrap break-words font-sans">
+                  <Linkified text={m.body} />
+                </pre>
               </div>
             </details>
           ))}
