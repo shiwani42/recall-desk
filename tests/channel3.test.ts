@@ -52,6 +52,7 @@ describe("alternativesFor", () => {
     });
     const r = await alternativesFor(heater);
     expect(r.via).toBe("similar");
+    expect(r.note).toBeUndefined();
     expect(r.listings.map((l) => l.id)).toEqual(["a1"]);
 
     const similar = calls.find((c) => c.path === "/v1/similar")!;
@@ -68,6 +69,7 @@ describe("alternativesFor", () => {
     const calls = mockChannel3({ own: [own], similar: 500, type: [product("t1", "Acme Space Heater", "Acme")] });
     const r = await alternativesFor(heater);
     expect(r.via).toBe("search");
+    expect(r.note).toMatch(/\/v1\/similar failed: Channel3 500/);
     expect(r.listings.map((l) => l.id)).toEqual(["t1"]);
     expect(calls.map((c) => c.path)).toEqual(["/v1/search", "/v1/similar", "/v1/search"]);
   });
@@ -76,12 +78,14 @@ describe("alternativesFor", () => {
     mockChannel3({ own: [own], similar: [product("d2", "DREO Tower Heater", "DREO")], type: [product("t1", "Acme Space Heater", "Acme")] });
     const r = await alternativesFor(heater);
     expect(r).toMatchObject({ via: "search", listings: [{ id: "t1" }] });
+    expect(r.note).toMatch(/returned 1 product\(s\), none usable/);
   });
 
   it("doesn't call /v1/similar when the model number isn't in any listing (not the recalled product)", async () => {
     const calls = mockChannel3({ own: [product("x", "Some Other Heater", "Acme")], type: [product("t1", "Acme Space Heater", "Acme")] });
     const r = await alternativesFor(heater);
     expect(r.via).toBe("search");
+    expect(r.note).toBe("DR-HSH015 isn't named in any Channel3 listing");
     expect(calls.some((c) => c.path === "/v1/similar")).toBe(false);
   });
 
@@ -89,6 +93,7 @@ describe("alternativesFor", () => {
     const calls = mockChannel3({ type: [product("t1", "Acme Space Heater", "Acme")] });
     const r = await alternativesFor({ ...heater, model: null });
     expect(r.via).toBe("search");
+    expect(r.note).toBe("no model number to look up");
     expect(calls.map((c) => c.path)).toEqual(["/v1/search"]);
   });
 

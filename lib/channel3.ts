@@ -111,7 +111,10 @@ export type AlternativesVia = "similar" | "search";
  *     POST /v1/similar for the products nearest to it.
  *  2. Otherwise, or if that call fails or leaves nothing usable, search by product type (the fallback).
  */
-export async function alternativesFor(product: Recalled, limit = 3): Promise<{ listings: Listing[]; via: AlternativesVia }> {
+export async function alternativesFor(
+  product: Recalled,
+  limit = 3,
+): Promise<{ listings: Listing[]; via: AlternativesVia; /** Why /v1/similar wasn't used, when it wasn't. */ note?: string }> {
   const price = product.unitPriceCents / 100;
   const brand = product.brand ? norm(product.brand) : null;
   // The product type without the recalled brand's name, e.g. "Ceramic Space Heater with Remote".
@@ -124,20 +127,29 @@ export async function alternativesFor(product: Recalled, limit = 3): Promise<{ l
       .map(toListing)
       .filter((l) => l.retailers.length > 0 && l.image)
       .slice(0, limit);
+  const why = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
   return cached(`alt:${query}:${product.brand}:${product.model}:${Math.round(price)}`, async () => {
-    const own = await ownProduct(product).catch(() => undefined);
-    if (own) {
+    let note: string | undefined;
+    const own = await ownProduct(product).catch((e) => {
+      note = `seed lookup failed: ${why(e)}`;
+      return undefined;
+    });
+    if (!own) {
+      note ??= product.model ? `${product.model} isn't named in any Channel3 listing` : "no model number to look up";
+    } else {
       try {
         // The source product isn't documented as excluded, so `usable` drops the recalled model itself.
         const brandIds = (own.brands ?? []).map((b) => b.id);
-        const listings = usable(await similar(own.id, { limit: 30, filters: { ...filters, ...(brandIds.length ? { exclude_brand_ids: brandIds } : {}) } }));
+        const found = await similar(own.id, { limit: 30, filters: { ...filters, ...(brandIds.length ? { exclude_brand_ids: brandIds } : {}) } });
+        const listings = usable(found);
         if (listings.length > 0) return { listings, via: "similar" as const };
-      } catch {
-        // fall through to the search below
+        note = `/v1/similar returned ${found.length} product(s), none usable (other brand, in stock, with an image)`;
+      } catch (e) {
+        note = `/v1/similar failed: ${why(e)}`;
       }
     }
-    return { listings: usable(await search({ query, limit: 24, filters })), via: "search" as const };
+    return { listings: usable(await search({ query, limit: 24, filters })), via: "search" as const, note };
   });
 }
 
@@ -155,6 +167,7 @@ export async function marketCheck(product: Recalled) {
     onSale: onSale.status === "fulfilled" ? onSale.value : [],
     alternatives: alternatives.status === "fulfilled" ? alternatives.value.listings : [],
     alternativesVia: alternatives.status === "fulfilled" ? alternatives.value.via : undefined,
+    alternativesNote: alternatives.status === "fulfilled" ? alternatives.value.note : undefined,
     error: [onSale, alternatives].find((r) => r.status === "rejected")?.reason?.message as string | undefined,
   };
 }
