@@ -21,7 +21,7 @@ import type { AnalyticsData } from "@/lib/analytics";
 import { buildAi } from "./ai";
 import { buildStudioData } from "./data";
 import RecallProgressWidget from "./RecallProgressWidget";
-import { PAGES, PROGRESS_WIDGET, defaultReport } from "./report";
+import { PAGES, PROGRESS_WIDGET, defaultReport, responsiveBreakpoints } from "./report";
 import { press } from "@/components/ui";
 import { recallStudioTheme } from "./theme";
 
@@ -231,6 +231,7 @@ function Workspace({ data, licenseKey, aiEnabled }: Props) {
             data={studioData}
             widgets={widgets}
             ai={ai}
+            responsiveLayoutBreakpoints={responsiveBreakpoints}
             initialState={initialState}
             mode={mode}
             onApiReady={(e) => {

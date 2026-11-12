@@ -1,7 +1,14 @@
 // The built-in Recall Desk report, as AG Studio report state. Field ids ('cases.exposure') refer to
 // the data sources in ./data.ts. Users (and the agents) can change it; Reset brings this back.
 
-import type { AgPageState, AgReportState, AgWidgetLayoutState } from "ag-studio";
+import type {
+  AgPageState,
+  AgReportState,
+  AgResponsiveLayoutBreakpoint,
+  AgResponsiveLayoutCandidate,
+  AgResponsiveLayoutState,
+  AgWidgetLayoutState,
+} from "ag-studio";
 
 // Canvas position in tracks: 24 columns wide, rows of studioCanvasRowHeight.
 const at = (xTrack: number, yTrack: number, xSpan: number, ySpan: number): AgWidgetLayoutState => ({ xTrack, yTrack, xSpan, ySpan });
@@ -137,16 +144,52 @@ const exposure: AgPageState = {
     },
   },
   widgetLayout: {
-    "kpi-revenue": at(0, 0, 6, 6),
-    "kpi-units": at(6, 0, 6, 6),
-    "kpi-orders": at(12, 0, 6, 6),
-    "sold-on": at(18, 0, 6, 6),
-    "units-by-month": at(0, 6, 16, 18),
-    "refund-route": at(16, 6, 8, 18),
-    "units-by-state": at(0, 24, 10, 22),
-    "sku-pivot": at(10, 24, 14, 22),
+    // The relative date filter stacks a type select and a number + unit row, which needs 9 tracks
+    // (6 clipped its second row), so the whole top band is 9 tall to keep it level.
+    "kpi-revenue": at(0, 0, 6, 9),
+    "kpi-units": at(6, 0, 6, 9),
+    "kpi-orders": at(12, 0, 6, 9),
+    "sold-on": at(18, 0, 6, 9),
+    "units-by-month": at(0, 9, 16, 18),
+    "refund-route": at(16, 9, 8, 18),
+    "units-by-state": at(0, 27, 10, 22),
+    "sku-pivot": at(10, 27, 14, 22),
   },
 };
+
+// Phone layout. On a narrow canvas the authored 24-column layout would be squeezed or scroll sideways,
+// so stack the widgets in reading order: tiles (KPIs, filters) two to a row, everything else full width.
+// Pure, so it also covers pages the analyst adds. Studio applies breakpoints in view mode only.
+export const PHONE_MAX_WIDTH = 719;
+const TILE_MAX_SPAN = 6;
+
+export function stackLayout(candidates: AgResponsiveLayoutCandidate[], { columns }: AgResponsiveLayoutState): AgWidgetLayoutState[] {
+  const order = candidates
+    .map((_, i) => i)
+    .sort((a, b) => candidates[a].layout.yTrack - candidates[b].layout.yTrack || candidates[a].layout.xTrack - candidates[b].layout.xTrack);
+  const half = Math.max(1, Math.floor(columns / 2));
+  const out = new Array<AgWidgetLayoutState>(candidates.length);
+  let x = 0;
+  let y = 0;
+  let rowHeight = 0;
+  for (const i of order) {
+    const { layout, minSize } = candidates[i];
+    const tile = layout.xSpan <= TILE_MAX_SPAN;
+    const xSpan = Math.min(columns, Math.max(tile ? half : columns, minSize.xSpan));
+    const ySpan = Math.max(layout.ySpan, minSize.ySpan);
+    if (x + xSpan > columns) {
+      y += rowHeight;
+      x = 0;
+      rowHeight = 0;
+    }
+    out[i] = { xTrack: x, yTrack: y, xSpan, ySpan };
+    x += xSpan;
+    rowHeight = Math.max(rowHeight, ySpan);
+  }
+  return out;
+}
+
+export const responsiveBreakpoints: AgResponsiveLayoutBreakpoint[] = [{ maxWidth: PHONE_MAX_WIDTH, layout: stackLayout }];
 
 export const PAGES = [
   { id: response.id, label: "Recall response" },

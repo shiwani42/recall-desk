@@ -31,6 +31,8 @@ export const recallStudioTheme = studioTheme.withParams({
   studioCanvasBackgroundColor: token("background"),
   studioCanvasPadding: 16,
   studioCanvasRowHeight: 18,
+  // The default (720) keeps the canvas wider than a phone, so the phone breakpoint in ./report never applies.
+  studioCanvasMinWidth: 320,
   studioCanvasFontFamily: FONT,
 
   studioWidgetBackgroundColor: token("surface"),
