@@ -51,6 +51,6 @@ npm run build       # production build; must pass before pushing main
 
 ## Open items (in order)
 
-1. Demo video (under 3 min, public on YouTube) and the Devpost submission. The owner has a ready report with the Devpost text and a beat sheet.
+1. Demo video (under 3 min, public on YouTube) and the Devpost submission. Ready-to-paste Devpost text and the video beat sheet are in `docs/devpost.md`.
 2. Optional, only if done by about 10:15 PT: switch buyer alternatives to Channel3 `/v1/similar-products`, with search as the fallback (`lib/channel3.ts`).
 3. After the deadline: seller auth, webhook registration on Render, Render Workflows (needs Postgres first), and Channel3 back-in-stock alerts for recalled models.
