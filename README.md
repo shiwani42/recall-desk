@@ -128,7 +128,7 @@ Buyers can choose any remedy the recall offers. The recommendation is the defaul
 
 - **10 real sandbox sales**, captured with PayPal's sandbox test cards. The seed rotates cards because the sandbox starts declining a card (`PAYER_CANNOT_PAY`) after heavy use.
 - **4 legacy sales and 280 orders of imported history** over the last 14 months. These are synthetic and deterministic, with fictional `@example.com` buyers and **no PayPal capture**, so refunds on them go out as PayPal payouts. They give the dashboards something to show.
-- **A past recall** (the Stomp Rocket kit), run through the real pipeline: matched, notices logged, 25 refunds sent as **real sandbox payouts** and 15 replacements. The payouts stay *Money in flight* because PayPal reports them `UNCLAIMED`: the fictional buyers have no PayPal accounts.
+- **A past recall** (the Stomp Rocket kit), run through the real pipeline: matched, notices logged, about 8 refunds sent as **real sandbox payouts** and about 16 replacements (half shipped); the rest haven't replied. The payouts stay *Money in flight* because PayPal reports them `UNCLAIMED`: the fictional buyers have no PayPal accounts. The seed sends few payouts on purpose, because every Render boot reseeds and payouts draw down the sandbox business balance. If refunds or payouts fail with `INSUFFICIENT_FUNDS`, top the sandbox balance up with test-card payments: `npx tsx --env-file-if-exists=.env.local scripts/fund-sandbox.ts 8 500` (nothing is added to the ledger).
 
 ## Stack
 

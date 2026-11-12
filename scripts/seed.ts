@@ -155,17 +155,24 @@ if (!process.argv.includes("--no-history")) {
   const matched = matchRecall(db, recall.id);
   await notifyBuyers(db, recall.id, process.env.APP_URL ?? process.env.RENDER_EXTERNAL_URL ?? "http://localhost:3000");
   const cases = db.select({ id: t.recallCases.id }).from(t.recallCases).where(eq(t.recallCases.recallId, recall.id)).all();
-  // Of every 6 buyers: 3 took a refund, 2 asked for a replacement (one already shipped), 1 hasn't replied.
-  let paid = 0, replaced = 0;
+  // Of every 6 buyers: 1 took a refund, 2 asked for a replacement (half already shipped), 3 haven't
+  // replied. Few payouts on purpose: every Render boot reseeds, and payouts draw down the sandbox
+  // business balance faster than the 10 seeded sales refill it (PayPal then answers INSUFFICIENT_FUNDS).
+  let paid = 0, replaced = 0, outOfFunds = false;
   for (const [i, c] of cases.entries()) {
     const slot = i % 6;
-    if (slot === 5) continue;
-    let remedy: "refund" | "replace" = slot < 3 ? "refund" : "replace";
+    if (slot >= 3) continue;
+    let remedy: "refund" | "replace" = slot === 0 ? "refund" : "replace";
+    if (remedy === "refund" && outOfFunds) continue; // leave them "notified" rather than failing more payouts
     let r = await resolveCase(db, c.id, remedy, "buyer");
     // Replacement stock ran out: the buyer takes a refund instead, as the buyer page would offer.
-    if (!r.ok && remedy === "replace") r = await resolveCase(db, c.id, (remedy = "refund"), "buyer");
+    if (!r.ok && remedy === "replace" && !outOfFunds) r = await resolveCase(db, c.id, (remedy = "refund"), "buyer");
     if (!r.ok) {
       console.error(`  ✗ case ${c.id}: ${r.error}`);
+      if (r.error.includes("INSUFFICIENT_FUNDS")) {
+        outOfFunds = true;
+        console.error("  ✗ sandbox balance is out of funds; skipping the remaining seeded payouts");
+      }
       continue;
     }
     if (remedy === "refund") paid++;
